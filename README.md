@@ -5,6 +5,17 @@ Upload raw lab and NIR feed analyses, and compare them to each diet's formulatio
 - **Live prototype:** https://devenish-a4843.web.app (create an account at `/signup`, then sign in with email + password)
 - **Notes (decisions, data issues, questions):** [NOTES.md](NOTES.md)
 
+## Demo accounts
+Sign in at https://devenish-a4843.web.app/login. There is one account per role:
+
+| Role | Email | Password | What you'll see |
+|---|---|---|---|
+| Devenish admin | `danacebboy@gmail.com` | `jLx-Bh6C-ypxB*x` | All customers, the **Admin** page (create customers), full editing |
+| Nutritionist | `kanamits2@gmail.com` | `euRFJ2yke9zzNDV9` | Customers A, D and F; can edit tolerances, locations, mills and the team; *Preview as customer* switch |
+| Farm team (producer) | `kanamits3@gmail.com` | `euRFJ2yke9zzNDV9` | **Customer A only**; can upload and ask questions; settings are read-only |
+
+Roles are assigned in `supabase/migrations/…07_demo_accounts.sql`. A new sign-up without an invitation joins the demo customers as a nutritionist.
+
 ## Stack
 | | |
 |---|---|
@@ -31,6 +42,7 @@ Migrations live in `supabase/migrations`:
 | `…03_import_rpc.sql` | `import_feed_upload()`: an atomic import that dedupes duplicates and only fills gaps when it merges |
 | `…05_questions.sql` | producer ↔ nutritionist question threads |
 | `…06_roles_invitations.sql` | producer / nutritionist / admin permissions, invitations, profiles |
+| `…07_demo_accounts.sql` | assigns the admin / nutritionist / farm-team demo accounts |
 | `…04_demo_seed.sql` | **generated** from `tests/fixtures/sample-data.xlsx` by `npm run seed:build`, using the same parsers as the app |
 
 ```bash
