@@ -3,7 +3,7 @@
 Upload raw lab and NIR feed analyses, and compare them to each diet's formulation. Deviations are flagged by location, flock phase and diet.
 
 - **Live prototype:** https://devenish-a4843.web.app (create an account at `/signup`, then sign in with email + password)
-- **Notes (decisions, data issues, questions):** [NOTES.md](NOTES.md)
+- **Notes (decisions, data issues, questions):** [NOTES.md](NOTES.md), also as a one-page PDF: [docs/Feed-Analysis-Notes.pdf](docs/Feed-Analysis-Notes.pdf)
 
 ## Demo accounts
 Sign in at https://devenish-a4843.web.app/login. There is one account per role:
