@@ -204,7 +204,7 @@ function NewQuestion({
 }
 
 function Thread({ q, me, onChange }: { q: Question; me: string; onChange: () => void }) {
-  const { locations } = usePortal();
+  const { locations, can } = usePortal();
   const [replies, setReplies] = useState<Reply[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -256,7 +256,7 @@ function Thread({ q, me, onChange }: { q: Question; me: string; onChange: () => 
         </div>
         <div className="flex items-center gap-2">
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillClass(STATUS_PILL[q.status])}`}>{q.status}</span>
-          {q.status === "open" && <button onClick={() => setStatus("answered")} className={buttonSecondary}>Mark answered</button>}
+          {q.status === "open" && can.manage && <button onClick={() => setStatus("answered")} className={buttonSecondary}>Mark answered</button>}
           {q.status !== "closed" ? (
             <button onClick={() => setStatus("closed")} className={buttonSecondary}>Close</button>
           ) : (

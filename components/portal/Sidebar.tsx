@@ -10,12 +10,13 @@ import {
   LineChart,
   LogOut,
   MessageSquare,
+  ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Brand } from "@/components/Brand";
-import { usePortal } from "@/lib/data/portal";
+import { ROLE_LABEL, usePortal } from "@/lib/data/portal";
 import { supabase } from "@/lib/supabase/client";
 
 const NAV = [
@@ -31,7 +32,8 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { orgs, org, setOrgId, session } = usePortal();
+  const { orgs, org, setOrgId, session, role, actualRole, isAdmin, previewAsProducer, setPreviewAsProducer } = usePortal();
+  const nav = isAdmin ? [...NAV, { label: "Admin", icon: ShieldCheck, href: "/admin", also: undefined }] : NAV;
   const email = session.user.email ?? "";
   const name = (session.user.user_metadata?.full_name as string | undefined)?.trim() || email;
   const initials = name
@@ -47,27 +49,38 @@ export function Sidebar() {
         <Brand />
       </div>
       <div className="border-t border-white/10 px-4 pt-5">
-        <label htmlFor="org" className="px-1 text-[13px] font-medium text-white/70">
-          Customer
-        </label>
-        <div className="relative mt-2">
-          <select
-            id="org"
-            value={org?.id ?? ""}
-            onChange={(e) => setOrgId(e.target.value)}
-            className="w-full appearance-none rounded-lg border border-white/15 bg-navy-800 px-3 py-2.5 pr-9 font-medium text-white outline-none focus:ring-2 focus:ring-accent/60"
-          >
-            {orgs.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={16} className="pointer-events-none absolute top-3 right-3 text-white/60" />
-        </div>
+        {orgs.length > 1 ? (
+          <>
+            <label htmlFor="org" className="px-1 text-[13px] font-medium text-white/70">
+              Customer
+            </label>
+            <div className="relative mt-2">
+              <select
+                id="org"
+                value={org?.id ?? ""}
+                onChange={(e) => setOrgId(e.target.value)}
+                className="w-full appearance-none rounded-lg border border-white/15 bg-navy-800 px-3 py-2.5 pr-9 font-medium text-white outline-none focus:ring-2 focus:ring-accent/60"
+              >
+                {orgs.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name}
+                    {o.is_demo ? " (demo)" : ""}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute top-3 right-3 text-white/60" />
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="px-1 text-[13px] font-medium text-white/70">Customer</p>
+            <p className="mt-2 rounded-lg border border-white/15 bg-navy-800 px-3 py-2.5 font-medium">{org?.name}</p>
+          </>
+        )}
+        {org?.is_demo && <p className="mt-2 px-1 text-[11px] text-white/50">Demo data from the sample workbook</p>}
       </div>
       <nav className="mt-4 flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible">
-        {NAV.map(({ label, icon: Icon, href, also }) => {
+        {nav.map(({ label, icon: Icon, href, also }) => {
           const active = [href, ...(also ?? [])].some((p) => pathname === p || pathname.startsWith(`${p}/`));
           const cls = `flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 text-[15px] ${
             active ? "bg-navy-800 font-semibold text-accent" : "text-white/85"
@@ -83,6 +96,21 @@ export function Sidebar() {
           );
         })}
       </nav>
+      {actualRole !== "producer" && (
+        <label className="mx-4 mb-3 flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-navy-800 px-3 py-2 text-xs text-white/80">
+          <span>
+            Preview as customer
+            <span className="block text-[11px] text-white/50">See what the farm team sees</span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={previewAsProducer}
+            onChange={(e) => setPreviewAsProducer(e.target.checked)}
+            className="size-4 accent-[#f5a524]"
+          />
+        </label>
+      )}
       <div className="hidden items-center gap-3 border-t border-white/10 px-4 py-4 lg:flex">
         <div className="grid size-10 place-items-center rounded-full bg-navy-700 text-sm font-semibold">
           {initials}
@@ -91,7 +119,10 @@ export function Sidebar() {
           <div className="truncate text-sm font-semibold" title={email}>
             {name}
           </div>
-          <div className="text-xs text-white/60">Nutritionist workspace</div>
+          <div className="text-xs text-white/60">
+            {ROLE_LABEL[actualRole]}
+            {role !== actualRole && <span className="text-accent"> · previewing customer view</span>}
+          </div>
         </div>
         <button
           onClick={() => supabase.auth.signOut()}

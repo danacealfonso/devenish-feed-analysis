@@ -19,6 +19,19 @@
   - Duplicates merge by *filling gaps only*, so re-uploading a sheet never double-counts or overwrites.
   - The raw file is kept in Storage for audit and reprocessing.
 
+## Customer access
+The portal has three roles, enforced in the database (RLS and checked functions), not just hidden in the UI:
+
+| Role | Sees | Can |
+|---|---|---|
+| **Farm team** (producer) | Only their own customer | View results, upload analyses, ask questions, invite colleagues |
+| **Nutritionist** | Every customer they're assigned to | All of the above, plus tolerances, locations, mills, team roles, and marking questions answered |
+| **Devenish admin** | All customers | Create customers and manage anyone |
+
+- **Invitations:** an invitation is tied to an email address. Access is granted automatically once someone signs up with that address and it's confirmed.
+- **No access yet:** anyone who signs in without an invitation sees an "ask your nutritionist" screen.
+- **Prototype only:** uninvited sign-ups join the 3 demo customers, so reviewers can explore immediately. Nutritionists and admins can switch on **Preview as customer** to see the farm-team view.
+
 ## What I noticed in the data (and how the real page should handle it)
 | Issue | Where | Prototype handling / recommendation |
 |---|---|---|

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthShell, Field, Notice, PasswordInput, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
 import { supabase } from "@/lib/supabase/client";
 
@@ -14,6 +14,11 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [resent, setResent] = useState(false);
+
+  useEffect(() => {
+    const e = new URLSearchParams(window.location.search).get("email");
+    if (e) setEmail(e);
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +52,7 @@ export default function LoginPage() {
         <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
         <p className="mt-2 text-sm text-ink-2">
           New to the portal?{" "}
-          <Link href="/signup" className="font-semibold text-navy-800 underline">
+          <Link href={`/signup${email ? `?email=${encodeURIComponent(email)}` : ""}`} className="font-semibold text-navy-800 underline">
             Create an account
           </Link>
         </p>

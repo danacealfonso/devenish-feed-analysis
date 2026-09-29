@@ -1,6 +1,6 @@
 "use client";
 
-import { Factory, MapPin, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Factory, Lock, MapPin, Plus, SlidersHorizontal, Trash2, Users } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { buttonPrimary, Card, inputBase, Page, PageHeader } from "@/components/portal/PageHeader";
@@ -9,7 +9,7 @@ import { usePortal } from "@/lib/data/portal";
 import { supabase } from "@/lib/supabase/client";
 
 export default function OperationPage() {
-  const { org, locations, mills, samples, rules, reload } = usePortal();
+  const { org, locations, mills, samples, rules, reload, can } = usePortal();
   const [error, setError] = useState<string | null>(null);
   const [newLoc, setNewLoc] = useState({ name: "", mill: "" });
   const [newMill, setNewMill] = useState("");
@@ -37,7 +37,26 @@ export default function OperationPage() {
         </p>
       )}
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {!can.manage && (
+        <p className="mt-6 flex items-center gap-2 rounded-lg bg-[#eef0f6] px-4 py-3 text-sm text-ink-2">
+          <Lock size={15} /> Locations, mills and tolerances are managed by your Devenish nutritionist. Ask them via Questions
+          if something here is wrong.
+        </p>
+      )}
+
+      <Link
+        href="/operation/team"
+        className="mt-6 flex items-center gap-3 rounded-xl border border-line bg-surface px-5 py-4 hover:bg-page"
+      >
+        <Users size={20} className="text-navy-700" />
+        <span className="flex-1">
+          <span className="block font-bold">Team &amp; access</span>
+          <span className="block text-sm text-ink-3">See who can view this customer’s data and invite colleagues.</span>
+        </span>
+        <span className="text-sm font-semibold text-navy-800">Manage →</span>
+      </Link>
+
+      <fieldset disabled={!can.manage} className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card title="Farm locations" subtitle="Each location is fed from one mill. Samples are assigned to a location on upload.">
           <ul className="divide-y divide-line">
             {locations.map((l) => {
@@ -80,7 +99,7 @@ export default function OperationPage() {
               );
             })}
           </ul>
-          <form
+          {can.manage && <form
             onSubmit={(e) => {
               e.preventDefault();
               if (!org || !newLoc.name.trim()) return;
@@ -100,7 +119,7 @@ export default function OperationPage() {
             <button className={buttonPrimary} disabled={!newLoc.name.trim()}>
               <Plus size={16} /> Add
             </button>
-          </form>
+          </form>}
         </Card>
 
         <div className="space-y-6">
@@ -131,7 +150,7 @@ export default function OperationPage() {
                 );
               })}
             </ul>
-            <form
+            {can.manage && <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!org || !newMill.trim()) return;
@@ -143,7 +162,7 @@ export default function OperationPage() {
               <button className={buttonPrimary} disabled={!newMill.trim()}>
                 <Plus size={16} /> Add
               </button>
-            </form>
+            </form>}
           </Card>
 
           <Card
@@ -151,7 +170,7 @@ export default function OperationPage() {
             subtitle="Watch and action bands, as % of intended."
             actions={
               <Link href="/settings/tolerances" className="inline-flex items-center gap-1 text-sm font-semibold text-navy-800 hover:underline">
-                <SlidersHorizontal size={14} /> Edit
+                <SlidersHorizontal size={14} /> {can.manage ? "Edit" : "View all"}
               </Link>
             }
           >
@@ -170,7 +189,7 @@ export default function OperationPage() {
             </table>
           </Card>
         </div>
-      </div>
+      </fieldset>
     </Page>
   );
 }

@@ -15,7 +15,7 @@ const FIELDS: [Field, string][] = [
 ];
 
 export default function TolerancesPage() {
-  const { org, rules, reload } = usePortal();
+  const { org, rules, reload, can } = usePortal();
   const [draft, setDraft] = useState<ToleranceRule[]>(rules);
   const [status, setStatus] = useState<string | null>(null);
   useEffect(() => setDraft(rules), [rules]);
@@ -80,7 +80,7 @@ export default function TolerancesPage() {
                       type="number"
                       step="any"
                       aria-label={`${NUTRIENT_META[r.nutrient].label} ${l}`}
-                      disabled={r.mode === "abs_min" && (f === "watchHigh" || f === "actionHigh" || f === "intendedOffset")}
+                      disabled={!can.manage || (r.mode === "abs_min" && (f === "watchHigh" || f === "actionHigh" || f === "intendedOffset"))}
                       value={r[f] ?? ""}
                       onChange={(e) => set(i, f, e.target.value)}
                       className="w-20 rounded-md border border-line px-2 py-1 text-right font-mono disabled:bg-page disabled:text-ink-3"
@@ -92,7 +92,10 @@ export default function TolerancesPage() {
           </tbody>
         </table>
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      {!can.manage && (
+        <p className="mt-4 text-sm text-ink-3">Read only. Tolerances are set by your Devenish nutritionist.</p>
+      )}
+      <div className={`mt-4 flex flex-wrap items-center gap-3 ${can.manage ? "" : "hidden"}`}>
         <button onClick={save} className="rounded-lg bg-navy-900 px-5 py-2.5 font-semibold text-white hover:bg-navy-800">
           Save tolerances
         </button>

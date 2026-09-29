@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthShell, Field, Notice, PasswordInput, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
 import { supabase } from "@/lib/supabase/client";
 
@@ -17,6 +17,16 @@ export default function SignupPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState(false);
+  const [invited, setInvited] = useState(false);
+
+  // Invitation links look like /signup?email=… so the invitee signs up with the address that was invited.
+  useEffect(() => {
+    const e = new URLSearchParams(window.location.search).get("email");
+    if (e) {
+      setEmail(e);
+      setInvited(true);
+    }
+  }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -60,6 +70,12 @@ export default function SignupPage() {
     <AuthShell>
       <form onSubmit={submit}>
         <h1 className="text-3xl font-bold tracking-tight">Create an account</h1>
+        {invited && (
+          <p className="mt-3 rounded-lg bg-ok-bg px-3 py-2 text-sm text-ok-ink">
+            You’ve been invited to the Devenish Insights Portal. Sign up with this email and you’ll get access to your
+            farm’s data as soon as it’s confirmed.
+          </p>
+        )}
         <p className="mt-2 text-sm text-ink-2">
           Already have one?{" "}
           <Link href="/login" className="font-semibold text-navy-800 underline">
