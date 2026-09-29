@@ -4,9 +4,10 @@ import type { NutrientCode } from "@/lib/parsers/types";
 
 const MIN = 40;
 const MAX = 180;
-const W = 1000;
-const ROW = 34;
-const LEFT = 64;
+// Sized for a half-width card: ~600 user units render at roughly 1:1, keeping labels legible.
+const W = 600;
+const ROW = 48;
+const LEFT = 52;
 
 const COLOR = {
   ok: "#8b8da6",
@@ -27,7 +28,7 @@ export function DistributionStrip({
 }) {
   const rows = nutrients.filter((n) => tolerances[n]?.mode !== "abs_min");
   const x = (p: number) => LEFT + ((Math.min(Math.max(p, MIN), MAX) - MIN) / (MAX - MIN)) * (W - LEFT - 16);
-  const H = rows.length * ROW + 28;
+  const H = rows.length * ROW + 30;
   const ticks = [50, 75, 100, 125, 150, 175];
 
   return (
@@ -41,8 +42,8 @@ export function DistributionStrip({
       <svg viewBox={`0 0 ${W} ${H}`} className="mt-3 w-full" role="img" aria-label="Dot plot of percent of intended per nutrient">
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={x(t)} x2={x(t)} y1={0} y2={H - 22} stroke={t === 100 ? "#16172b" : "#e4e4ec"} strokeWidth={t === 100 ? 1.2 : 1} />
-            <text x={x(t)} y={H - 6} textAnchor="middle" fontSize="12" fill="#7c7e96">
+            <line x1={x(t)} x2={x(t)} y1={0} y2={H - 26} stroke={t === 100 ? "#16172b" : "#e4e4ec"} strokeWidth={t === 100 ? 1.2 : 1} />
+            <text x={x(t)} y={H - 8} textAnchor="middle" fontSize="12" fill="#7c7e96">
               {t}%
             </text>
           </g>
@@ -53,24 +54,24 @@ export function DistributionStrip({
           const pts = samples.map((s) => s.results[n]).filter((r) => r?.ev.pct != null);
           return (
             <g key={n}>
-              <text x={0} y={y + 4} fontSize="13" fontWeight="600" fill="#16172b">
+              <text x={0} y={y + 5} fontSize="14" fontWeight="600" fill="#16172b">
                 {NUTRIENT_META[n].short}
               </text>
               {rule?.watchLow != null && rule.watchHigh != null && (
-                <rect x={x(rule.watchLow)} width={x(rule.watchHigh) - x(rule.watchLow)} y={y - 11} height={22} fill="#e4f5ea" rx={3} />
+                <rect x={x(rule.watchLow)} width={x(rule.watchHigh) - x(rule.watchLow)} y={y - 17} height={34} fill="#e4f5ea" rx={4} />
               )}
               {[rule?.actionLow, rule?.actionHigh].map(
-                (a, j) => a != null && <line key={j} x1={x(a)} x2={x(a)} y1={y - 13} y2={y + 13} stroke="#c2381f" strokeDasharray="3 3" />,
+                (a, j) => a != null && <line key={j} x1={x(a)} x2={x(a)} y1={y - 19} y2={y + 19} stroke="#c2381f" strokeDasharray="3 3" />,
               )}
               {pts.map((r, j) => {
                 const st = r!.ev.status as keyof typeof COLOR;
-                const jitter = ((j * 7919) % 17) - 8;
+                const jitter = ((j * 7919) % 25) - 12;
                 return (
                   <circle
                     key={j}
                     cx={x(r!.ev.pct!)}
-                    cy={y + jitter * 0.9}
-                    r={3.2}
+                    cy={y + jitter}
+                    r={3.6}
                     fill={COLOR[st] ?? COLOR.ok}
                     fillOpacity={st === "ok" ? 0.45 : 0.85}
                   />
@@ -80,6 +81,21 @@ export function DistributionStrip({
           );
         })}
       </svg>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-2" aria-label="Dot colours">
+        {(
+          [
+            ["ok", "In band"],
+            ["watch", "Watch"],
+            ["action", "Action"],
+            ["suspect", "Check data"],
+          ] as const
+        ).map(([k, label]) => (
+          <li key={k} className="flex items-center gap-1.5">
+            <span className="inline-block size-2.5 rounded-full" style={{ background: COLOR[k], opacity: k === "ok" ? 0.55 : 0.9 }} />
+            {label}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

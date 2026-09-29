@@ -175,7 +175,7 @@ function FeedContent() {
       ) : (
         <div className="mt-8 space-y-8">
           <HeadlineCards samples={filtered} tolerances={tolerances} />
-          <div className="grid gap-8 xl:grid-cols-2">
+          <div className="grid items-start gap-8 xl:grid-cols-2">
             <AttentionList flags={flags} since={currentCycleStart(filtered)} />
             <DistributionStrip samples={filtered} nutrients={nutrients} tolerances={tolerances} />
           </div>

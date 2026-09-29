@@ -45,7 +45,20 @@ cp .env.example .env.local   # publishable Supabase URL/key
 npm install
 npm run dev                  # http://localhost:3000
 npm test                     # parser + analysis tests against the sample workbook
+npm run e2e                  # Playwright browser tests against the live site (see below)
 ```
+
+## Tests
+- **Unit (`npm test`, Vitest, 34 tests):** detection and parsing of all 9 sample sheets, recalculated % of intended matched against the workbook's own values, stats, dedupe, flags.
+- **End-to-end (`npm run e2e`, Playwright, 18 tests):** signs in as each demo role and checks every page, including:
+  - filters and diet drill-down
+  - CSV export
+  - farm-team read-only restrictions
+  - a real upload through the upload dialog
+  - the admin console
+  - phone-width layout
+
+  Tests fail on any browser console error. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium`.
 
 ## Database
 Migrations live in `supabase/migrations`:

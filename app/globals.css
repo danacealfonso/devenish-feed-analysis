@@ -86,3 +86,9 @@ body {
     margin: 14mm;
   }
 }
+
+/* Scroll boxes must contain absolutely positioned descendants (e.g. .sr-only text in table cells);
+   otherwise those escape the box and widen the whole page on small screens. */
+.overflow-x-auto {
+  position: relative;
+}

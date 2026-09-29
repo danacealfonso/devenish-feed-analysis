@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { currentCycleStart, fmtDate } from "@/lib/analysis/flags";
 import { summarize } from "@/lib/analysis/stats";
 import { NUTRIENT_META, type ToleranceMap } from "@/lib/analysis/tolerances";
 import type { SampleView } from "@/lib/analysis/view";
@@ -9,18 +10,18 @@ const KEY: NutrientCode[] = ["cp", "ca", "p", "na"];
 
 /** One card per headline nutrient: how much of the latest month's feed was in the watch band, and the trend. */
 export function HeadlineCards({ samples, tolerances }: { samples: SampleView[]; tolerances: ToleranceMap }) {
-  const dated = samples.filter((s) => s.sampledOn).sort((a, b) => b.sampledOn!.localeCompare(a.sampledOn!));
-  const latestMonth = dated[0]?.sampledOn?.slice(0, 7);
-  const prevMonths = [...new Set(dated.map((s) => s.sampledOn!.slice(0, 7)))].filter((m) => m !== latestMonth).slice(0, 3);
-  const monthLabel = latestMonth
-    ? new Date(`${latestMonth}-01T00:00:00`).toLocaleDateString("en-GB", { month: "long", year: "numeric" })
-    : "—";
+  // Same window as "Needs attention": the current sampling cycle, compared with the 3 months before it.
+  const cycleStart = currentCycleStart(samples);
+  const prevStart = cycleStart ? shiftDays(cycleStart, -90) : null;
+  const inCycle = (s: SampleView) => !!cycleStart && (s.sampledOn ?? "") >= cycleStart;
+  const inPrev = (s: SampleView) => !!cycleStart && !!prevStart && (s.sampledOn ?? "") >= prevStart && (s.sampledOn ?? "") < cycleStart;
+  const cycleSamples = samples.filter(inCycle);
 
   return (
     <section aria-labelledby="headlines">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="headlines" className="eyebrow">
-          Latest submission · {monthLabel}
+          Current cycle{cycleStart ? ` · since ${fmtDate(cycleStart)}` : ""} · {cycleSamples.length} samples
         </h2>
         <p className="text-xs text-ink-3">% of intended; bands from Operation → Tolerances</p>
       </div>
@@ -28,10 +29,10 @@ export function HeadlineCards({ samples, tolerances }: { samples: SampleView[]; 
         {KEY.map((n) => {
           const meta = NUTRIENT_META[n];
           const rule = tolerances[n];
-          const inMonth = (m: string | undefined) =>
-            dated.filter((s) => s.sampledOn!.startsWith(m ?? "~")).map((s) => s.results[n]).filter((r) => r?.ev.pct != null);
-          const cur = inMonth(latestMonth);
-          const prev = prevMonths.flatMap((m) => inMonth(m));
+          const pick = (f: (s: SampleView) => boolean) =>
+            samples.filter(f).map((s) => s.results[n]).filter((r) => r?.ev.pct != null);
+          const cur = pick(inCycle);
+          const prev = pick(inPrev);
           const st = summarize(cur.map((r) => r!.ev.pct));
           const stPrev = summarize(prev.map((r) => r!.ev.pct));
           const inBand = cur.filter((r) => r!.ev.status === "ok").length;
@@ -95,4 +96,10 @@ export function HeadlineCards({ samples, tolerances }: { samples: SampleView[]; 
       </div>
     </section>
   );
+}
+
+function shiftDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
 }

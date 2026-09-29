@@ -2,7 +2,7 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_TOLERANCES, toMap, type ToleranceMap, type ToleranceRule } from "../analysis/tolerances";
 import { buildViews, type LocationRow, type MillRow, type SampleRowDb, type SampleView } from "../analysis/view";
 import type { NutrientCode } from "../parsers/types";
@@ -43,6 +43,8 @@ interface PortalState {
   tolerances: ToleranceMap;
   samples: SampleView[];
   loading: boolean;
+  /** True once data for the currently selected customer has arrived. */
+  ready: boolean;
   error: string | null;
   reload: () => Promise<void>;
   reloadOrgs: (selectId?: string) => Promise<void>;
@@ -123,8 +125,11 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   const [mills, setMills] = useState<MillRow[]>([]);
   const [rules, setRules] = useState<ToleranceRule[]>(DEFAULT_TOLERANCES);
   const [rows, setRows] = useState<SampleRowDb[]>([]);
+  const [loadedOrg, setLoadedOrg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Guards against a slow response for a previously selected customer overwriting the current one.
+  const loadSeq = useRef(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -177,6 +182,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     if (!orgId) return;
+    const seq = ++loadSeq.current;
+    const stale = () => seq !== loadSeq.current;
     setLoading(true);
     setError(null);
     try {
@@ -186,16 +193,18 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         supabase.from("tolerance_rules").select("*").eq("org_id", orgId),
         fetchAllSamples(orgId),
       ]);
+      if (stale()) return;
       for (const r of [loc, mil, tol]) if (r.error) throw r.error;
       setLocations((loc.data ?? []) as LocationRow[]);
       setMills((mil.data ?? []) as MillRow[]);
       const custom = (tol.data ?? []).map(mapRule);
       setRules(DEFAULT_TOLERANCES.map((d) => custom.find((c) => c.nutrient === d.nutrient) ?? d));
       setRows(smp);
+      setLoadedOrg(orgId);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (!stale()) setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      if (!stale()) setLoading(false);
     }
   }, [orgId]);
 
@@ -206,6 +215,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   const tolerances = useMemo(() => toMap(rules), [rules]);
   const samples = useMemo(() => buildViews(rows, tolerances, locations, mills), [rows, tolerances, locations, mills]);
   const org = orgs?.find((o) => o.id === orgId) ?? null;
+  // Never show one customer's data under another customer's name while a switch is in flight.
+  const ready = loadedOrg === orgId;
 
   const actualRole: Role = isAdmin ? "admin" : (orgId && myRoles[orgId]) || "producer";
   const role: Role = previewAsProducer && actualRole !== "producer" ? "producer" : actualRole;
@@ -232,12 +243,13 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         can,
         previewAsProducer,
         setPreviewAsProducer,
-        locations,
-        mills,
+        locations: ready ? locations : [],
+        mills: ready ? mills : [],
         rules,
         tolerances,
-        samples,
-        loading,
+        samples: ready ? samples : [],
+        loading: loading || !ready,
+        ready,
         error,
         reload,
         reloadOrgs,

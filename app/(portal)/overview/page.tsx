@@ -25,6 +25,8 @@ interface QuestionRow {
   updated_at: string;
 }
 
+const BAR_LABEL: Record<string, string> = { cp: "Crude protein", ca: "Calcium", p: "Phosphorus", na: "Sodium" };
+
 function bandColor(p: number | null) {
   if (p == null) return "bg-line";
   if (p >= 75) return "bg-ok-ink";
@@ -108,8 +110,8 @@ export default function OverviewPage() {
             </div>
             <dl className="mt-5 space-y-2.5">
               {byNutrient.map(({ n, c }) => (
-                <div key={n} className="grid grid-cols-[90px_1fr_48px] items-center gap-3 text-sm">
-                  <dt className="font-medium">{NUTRIENT_META[n].label.replace("Total ", "")}</dt>
+                <div key={n} className="grid grid-cols-[108px_1fr_44px] items-center gap-3 text-sm">
+                  <dt className="font-medium whitespace-nowrap">{BAR_LABEL[n] ?? NUTRIENT_META[n].label}</dt>
                   <div className="h-2 overflow-hidden rounded-full bg-page" aria-hidden>
                     <div className={`h-full rounded-full ${bandColor(c.pctInBand)}`} style={{ width: `${c.pctInBand ?? 0}%` }} />
                   </div>
@@ -117,7 +119,9 @@ export default function OverviewPage() {
                 </div>
               ))}
             </dl>
-            <p className="mt-1 text-right text-[11px] text-ink-3">% of results in band</p>
+            <p className="mt-1 text-right text-[11px] text-ink-3">
+              % of results in band · {current ? "current cycle" : "all samples (none this cycle)"}
+            </p>
             <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4 text-xs">
               <div>
                 <dt className="font-semibold text-ink-3 uppercase">This cycle</dt>

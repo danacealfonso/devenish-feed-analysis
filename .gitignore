@@ -42,3 +42,10 @@ next-env.d.ts
 
 # firebase deploy cache
 .firebase/
+
+# local drafts
+submission-email.txt
+
+# playwright
+/e2e-results/
+/e2e-report/
