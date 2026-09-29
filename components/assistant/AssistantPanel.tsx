@@ -243,26 +243,32 @@ function Assistant() {
 
 /** Minimal formatting for model output: paragraphs, "-"/"1." lists and **bold**. Text only, never HTML. */
 function Rich({ text }: { text: string }) {
-  const blocks = text.split(/\n{2,}/);
+  // Group consecutive lines into paragraphs and lists, so a lead-in line followed by bullets renders both.
+  const groups: { kind: "p" | "ul" | "ol"; lines: string[] }[] = [];
+  for (const raw of text.split("\n")) {
+    const line = raw.replace(/^#{1,6}\s+/, "");
+    if (!line.trim()) {
+      groups.push({ kind: "p", lines: [] }); // blank line ends the current group
+      continue;
+    }
+    const kind = /^\s*\d+\.\s+/.test(line) ? "ol" : /^\s*[-*•]\s+/.test(line) ? "ul" : "p";
+    const last = groups[groups.length - 1];
+    if (last && last.kind === kind && last.lines.length) last.lines.push(line);
+    else groups.push({ kind, lines: [line] });
+  }
   return (
     <div className="space-y-2.5">
-      {blocks.map((b, i) => {
-        const lines = b.split("\n").filter((l) => l.trim());
-        if (lines.length && lines.every((l) => /^\s*([-*•]|\d+\.)\s+/.test(l))) {
-          const ordered = /^\s*\d+\./.test(lines[0]);
-          const items = lines.map((l, j) => <li key={j}>{inline(l.replace(/^\s*([-*•]|\d+\.)\s+/, ""))}</li>);
-          return ordered ? (
+      {groups
+        .filter((g) => g.lines.length)
+        .map((g, i) => {
+          if (g.kind === "p") return <p key={i} className="whitespace-pre-wrap">{inline(g.lines.join("\n"))}</p>;
+          const items = g.lines.map((l, j) => <li key={j}>{inline(l.replace(/^\s*([-*•]|\d+\.)\s+/, ""))}</li>);
+          return g.kind === "ol" ? (
             <ol key={i} className="list-decimal space-y-1 pl-5">{items}</ol>
           ) : (
             <ul key={i} className="list-disc space-y-1 pl-5">{items}</ul>
           );
-        }
-        return (
-          <p key={i} className="whitespace-pre-wrap">
-            {inline(b.replace(/^#{1,6}\s+/gm, ""))}
-          </p>
-        );
-      })}
+        })}
     </div>
   );
 }
