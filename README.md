@@ -16,6 +16,21 @@ Sign in at https://devenish-a4843.web.app/login. There is one account per role:
 
 Roles are assigned in `supabase/migrations/…07_demo_accounts.sql`. A new sign-up without an invitation joins the demo customers as a nutritionist.
 
+### What each role can do
+| | Devenish admin | Nutritionist | Farm team |
+|---|---|---|---|
+| Who it's for | Devenish staff running the portal | Devenish feed expert looking after several farms | The farm owner and their staff |
+| Customers visible | All | Assigned ones | Own farm only (no customer switcher) |
+| View results, upload lab/NIR files, ask questions | ✓ | ✓ | ✓ |
+| Change tolerances, locations, feed mills | ✓ | ✓ | Read-only |
+| Mark questions answered | ✓ | ✓ | ✗ |
+| Invite people | Anyone | Farm team or nutritionists | Farm colleagues only |
+| Change roles / remove people | ✓ | ✓ | Can only leave |
+| Create customers (Admin page) | ✓ | ✗ | ✗ |
+| *Preview as customer* switch | ✓ | ✓ | n/a |
+
+These rules are enforced in the database (row-level security and permission-checked functions), not just hidden in the UI. Invited people get access once they sign up with the invited email and it's confirmed.
+
 ## Stack
 | | |
 |---|---|
