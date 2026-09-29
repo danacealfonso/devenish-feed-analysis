@@ -31,6 +31,20 @@ Roles are assigned in `supabase/migrations/…07_demo_accounts.sql`. A new sign-
 
 These rules are enforced in the database (row-level security and permission-checked functions), not just hidden in the UI. Invited people get access once they sign up with the invited email and it's confirmed.
 
+## AI assistant
+Every portal page has an **Ask about this data** button that opens a chat panel. It explains the current customer's feed results in plain language: what's off, by how much, why it matters for the hens, and what looks like a data problem rather than a feed problem.
+
+- **How it works:**
+  - The browser builds a text snapshot of exactly what the portal shows: % of intended, statuses, flags, stats and tolerances (`lib/assistant/context.ts`).
+  - The Supabase Edge Function `supabase/functions/assistant` checks that the user is signed in and can view that customer, enforces daily caps (40 questions per user, 500 overall), and streams the answer from **Claude Opus 5**.
+- **Cost controls:** the customer's data block is prompt-cached, so follow-up questions are cheap. Answers run at effort `medium`. Server-side refusal fallback (`fallbacks: "default"`) is enabled.
+- **Setup:**
+  ```bash
+  supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+  supabase functions deploy assistant --use-api --no-verify-jwt
+  ```
+  `--no-verify-jwt` is set because the function verifies the user's token itself.
+
 ## Stack
 | | |
 |---|---|
@@ -58,7 +72,7 @@ npm run e2e                  # Playwright browser tests against the live site (s
   - the admin console
   - phone-width layout
 
-  Tests fail on any browser console error. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium`.
+  Tests fail on any browser console error. The assistant test that calls the real model is opt-in: `E2E_ASSISTANT=1 npm run e2e -- assistant`. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium`.
 
 ## Database
 Migrations live in `supabase/migrations`:

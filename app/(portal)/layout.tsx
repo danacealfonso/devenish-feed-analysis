@@ -1,5 +1,6 @@
 "use client";
 
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { Sidebar } from "@/components/portal/Sidebar";
 import { PortalProvider, usePortal } from "@/lib/data/portal";
 
@@ -14,7 +15,12 @@ function Content({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <AssistantPanel />
+    </>
+  );
 }
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
