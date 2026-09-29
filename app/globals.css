@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
+/* Tokens sampled from the Insight Portal dashboard screenshot. The portal is light-only. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --navy-950: #14163f;
+  --navy-900: #1b1e52;
+  --navy-800: #262a66;
+  --navy-700: #353a7d;
+  --accent: #f5a524;
+  --page: #f6f6f9;
+  --surface: #ffffff;
+  --line: #e4e4ec;
+  --ink: #16172b;
+  --ink-2: #4b4d66;
+  --ink-3: #7c7e96;
+
+  --ok-bg: #e4f5ea;
+  --ok-ink: #17773c;
+  --watch-bg: #fdf0d8;
+  --watch-ink: #8a5a00;
+  --action-bg: #fbdcd6;
+  --action-ink: #9c2a17;
+  --high-bg: #dde8fb;
+  --high-ink: #1f4f9c;
+  --high-action-bg: #bcd2f7;
+  --suspect-bg: #ecebf2;
+  --suspect-ink: #55546b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-navy-950: var(--navy-950);
+  --color-navy-900: var(--navy-900);
+  --color-navy-800: var(--navy-800);
+  --color-navy-700: var(--navy-700);
+  --color-accent: var(--accent);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-ink: var(--ok-ink);
+  --color-watch-bg: var(--watch-bg);
+  --color-watch-ink: var(--watch-ink);
+  --color-action-bg: var(--action-bg);
+  --color-action-ink: var(--action-ink);
+  --color-high-bg: var(--high-bg);
+  --color-high-ink: var(--high-ink);
+  --color-high-action-bg: var(--high-action-bg);
+  --color-suspect-bg: var(--suspect-bg);
+  --color-suspect-ink: var(--suspect-ink);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.suspect-stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--suspect-bg) 0 6px,
+    #f7f6fb 6px 12px
+  );
 }
