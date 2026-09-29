@@ -67,6 +67,11 @@ export default function LoginPage() {
         <Field id="password" label="Password">
           <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="current-password" />
         </Field>
+        <p className="mt-2 text-right text-sm">
+          <Link href="/forgot-password" className="font-semibold text-navy-800 hover:underline">
+            Forgot password?
+          </Link>
+        </p>
 
         <button disabled={busy} className={primaryButtonClass}>
           {busy ? "Signing in…" : "Sign in"}

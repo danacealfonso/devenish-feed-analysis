@@ -41,3 +41,6 @@ export function pillClass(kind: "ok" | "watch" | "action" | "suspect" | "info"):
     info: "bg-[#eef0f6] text-ink-2",
   }[kind];
 }
+
+/** One colour per headline nutrient, used by every multi-series chart. */
+export const SERIES_COLORS: Record<string, string> = { cp: "#1b1e52", ca: "#c26d00", p: "#2f7d5b", na: "#7a4fb5" };

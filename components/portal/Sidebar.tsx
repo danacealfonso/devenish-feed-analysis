@@ -19,14 +19,14 @@ import { usePortal } from "@/lib/data/portal";
 import { supabase } from "@/lib/supabase/client";
 
 const NAV = [
-  { label: "Overview", icon: LayoutGrid },
-  { label: "Dashboard", icon: BarChart3 },
-  { label: "Compare my flocks", icon: LineChart },
-  { label: "Data", icon: Database },
+  { label: "Overview", icon: LayoutGrid, href: "/overview" },
+  { label: "Dashboard", icon: BarChart3, href: "/dashboard" },
+  { label: "Compare my flocks", icon: LineChart, href: "/compare" },
+  { label: "Data", icon: Database, href: "/data" },
   { label: "Feed", icon: FlaskConical, href: "/feed" },
-  { label: "Questions", icon: MessageSquare },
-  { label: "Reports", icon: FileText },
-  { label: "Operation", icon: SlidersHorizontal, href: "/settings/tolerances" },
+  { label: "Questions", icon: MessageSquare, href: "/questions" },
+  { label: "Reports", icon: FileText, href: "/reports" },
+  { label: "Operation", icon: SlidersHorizontal, href: "/operation", also: ["/settings"] },
 ];
 
 export function Sidebar() {
@@ -42,7 +42,7 @@ export function Sidebar() {
     .join("");
 
   return (
-    <aside className="flex w-full shrink-0 flex-col bg-navy-900 text-white lg:sticky lg:top-0 lg:h-screen lg:w-[260px]">
+    <aside className="flex w-full shrink-0 flex-col print:hidden bg-navy-900 text-white lg:sticky lg:top-0 lg:h-screen lg:w-[260px]">
       <div className="px-6 pt-6 pb-5">
         <Brand />
       </div>
@@ -67,8 +67,8 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="mt-4 flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible">
-        {NAV.map(({ label, icon: Icon, href }) => {
-          const active = href && pathname.startsWith(href.split("/").slice(0, 2).join("/"));
+        {NAV.map(({ label, icon: Icon, href, also }) => {
+          const active = [href, ...(also ?? [])].some((p) => pathname === p || pathname.startsWith(`${p}/`));
           const cls = `flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 text-[15px] ${
             active ? "bg-navy-800 font-semibold text-accent" : "text-white/85"
           }`;

@@ -56,14 +56,28 @@ export function AttentionList({ flags, since }: { flags: Flag[]; since: string |
                     <span className="text-xs whitespace-nowrap text-ink-3">{fmtDate(f.date)}</span>
                   </div>
                   <p className="mt-0.5 text-sm text-ink-2">{f.detail}</p>
-                  {f.dietKey && f.locationId && (
+                  <div className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold">
+                    {f.dietKey && f.locationId && (
+                      <Link
+                        href={`/feed/diet?loc=${f.locationId}&diet=${encodeURIComponent(f.dietKey)}`}
+                        className="text-navy-800 hover:underline"
+                      >
+                        View diet history →
+                      </Link>
+                    )}
                     <Link
-                      href={`/feed/diet?loc=${f.locationId}&diet=${encodeURIComponent(f.dietKey)}`}
-                      className="mt-1 inline-block text-sm font-semibold text-navy-800 hover:underline"
+                      href={`/questions?${new URLSearchParams({
+                        new: "1",
+                        subject: f.title,
+                        body: `${f.detail}\n\nSampled ${fmtDate(f.date)}. What should we do about this?`,
+                        ...(f.locationId ? { loc: f.locationId } : {}),
+                        ...(f.dietKey ? { diet: f.dietKey } : {}),
+                      })}`}
+                      className="text-navy-800 hover:underline"
                     >
-                      View diet history →
+                      Ask about this
                     </Link>
-                  )}
+                  </div>
                 </div>
               </li>
             );

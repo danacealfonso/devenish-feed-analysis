@@ -1,7 +1,8 @@
 "use client";
 
 import { RefreshCw, Upload } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
 import { AttentionList } from "@/components/feed/AttentionList";
 import { DeviationMatrix } from "@/components/feed/DeviationMatrix";
 import { DistributionStrip } from "@/components/feed/DistributionStrip";
@@ -39,8 +40,17 @@ function Select({ label, value, onChange, children }: { label: string; value: st
 }
 
 export default function FeedPage() {
+  return (
+    <Suspense fallback={null}>
+      <FeedContent />
+    </Suspense>
+  );
+}
+
+function FeedContent() {
+  const params = useSearchParams();
   const { org, samples, locations, mills, tolerances, loading, error, reload } = usePortal();
-  const [loc, setLoc] = useState("all");
+  const [loc, setLoc] = useState(params.get("loc") ?? "all");
   const [mill, setMill] = useState("all");
   const [source, setSource] = useState("all");
   const [phase, setPhase] = useState("all");

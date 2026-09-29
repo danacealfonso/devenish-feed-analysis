@@ -76,3 +76,13 @@ body {
     #f7f6fb 6px 12px
   );
 }
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+  @page {
+    margin: 14mm;
+  }
+}

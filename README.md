@@ -29,6 +29,7 @@ Migrations live in `supabase/migrations`:
 | `…01_init.sql` | tables |
 | `…02_rls.sql` | row-level security, the new-user → demo-org trigger, and the storage bucket |
 | `…03_import_rpc.sql` | `import_feed_upload()`: an atomic import that dedupes duplicates and only fills gaps when it merges |
+| `…05_questions.sql` | producer ↔ nutritionist question threads |
 | `…04_demo_seed.sql` | **generated** from `tests/fixtures/sample-data.xlsx` by `npm run seed:build`, using the same parsers as the app |
 
 ```bash
@@ -49,5 +50,7 @@ lib/analysis/     % of intended, watch/action/suspect status, flags, stats, dedu
 lib/import/       builds the RPC payload (shared by the upload dialog and the seed script)
 lib/data/         session, customer switcher, data loading (client-side, RLS-scoped)
 components/feed/  headline cards, needs-attention list, dot plot, deviation matrix, stats table, upload dialog
-app/(portal)/     /feed, /feed/diet?loc=&diet=, /settings/tolerances
+app/(portal)/     /overview, /dashboard, /compare, /data, /feed, /feed/diet, /questions, /reports,
+                  /operation, /settings/tolerances
+app/              /login, /signup, /forgot-password, /reset-password, /auth/callback
 ```
