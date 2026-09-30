@@ -1,6 +1,6 @@
 "use client";
 
-import { BellRing, Mail, Send } from "lucide-react";
+import { BellRing, Info, Mail, Send } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { buttonPrimary, buttonSecondary, Card, inputBase, Page, PageHeader } from "@/components/portal/PageHeader";
 import { usePortal } from "@/lib/data/portal";
@@ -188,6 +188,13 @@ export default function NotificationsPage() {
               </div>
             </div>
             {note("email")}
+            <p className="flex gap-2 rounded-lg bg-watch-bg px-3 py-2.5 text-sm text-watch-ink">
+              <Info size={16} className="mt-0.5 shrink-0" aria-hidden />
+              <span>
+                Emails come from “Feed Analysis”. If one doesn’t reach your inbox, check your spam folder and mark it “Not spam” so the next
+                ones arrive normally.
+              </span>
+            </p>
           </form>
         </Card>
 

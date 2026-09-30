@@ -20,6 +20,7 @@ test.describe("notifications", () => {
     await page.getByRole("link", { name: "Notifications" }).click();
     await expect(page.getByRole("heading", { name: "Notifications", level: 1 })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Push notifications" })).toBeVisible();
+    await expect(page.getByText("check your spam folder and mark it “Not spam”")).toBeVisible();
 
     const input = page.getByLabel("Send emails to");
     await expect(input).toHaveAttribute("placeholder", ACCOUNTS.nutritionist.email);
