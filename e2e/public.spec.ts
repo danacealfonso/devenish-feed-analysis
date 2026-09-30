@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { ACCOUNTS, appAlert, shot, watchErrors } from "./helpers";
+import { ACCOUNTS, appAlert, shot, stubHumanCheck, watchErrors } from "./helpers";
 
 test.describe("signed-out pages", () => {
+  test.beforeEach(async ({ page }) => stubHumanCheck(page));
+
   test("portal pages redirect to sign-in", async ({ page }) => {
     await page.goto("/feed");
     await page.waitForURL("**/login");
@@ -14,7 +16,8 @@ test.describe("signed-out pages", () => {
     await page.getByLabel("Email").fill(ACCOUNTS.farm.email);
     await page.getByLabel("Password", { exact: true }).fill("definitely-wrong-password");
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(appAlert(page)).toContainText("don’t match an account");
+    // Once the server checks CAPTCHAs, the test stand-in's answer is refused before the password is checked.
+    await expect(appAlert(page)).toContainText(/don’t match an account|human check didn’t go through/);
     await shot(page, "login-error");
     // Supabase answers 400 for bad credentials; the browser logs that as a failed request, which is expected here.
     expect(errors.filter((e) => !e.includes("400"))).toEqual([]);
@@ -46,6 +49,25 @@ test.describe("signed-out pages", () => {
     await expect(appAlert(page)).toContainText("don’t match");
     await shot(page, "signup");
     expect(errors).toEqual([]);
+  });
+
+  test("sign-in, sign-up and reset forms ask for the human check", async ({ page }) => {
+    await page.route("https://challenges.cloudflare.com/turnstile/**", (r) =>
+      r.fulfill({ contentType: "application/javascript", body: "window.turnstile={render(el){el.textContent='Verify you are human';return 'w'},reset(){},remove(){}};" }),
+    );
+    for (const [path, button] of [["/login", "Sign in"], ["/signup", "Create account"], ["/forgot-password", "Send reset link"]] as const) {
+      await page.goto(path);
+      await expect(page.getByText("Verify you are human")).toBeVisible();
+      if (path === "/signup") {
+        await page.getByLabel("Full name").fill("Test Person");
+        await page.getByLabel("Password", { exact: true }).fill("longenough1");
+        await page.getByLabel("Confirm password").fill("longenough1");
+      }
+      await page.getByLabel(/^(Email|Work email)$/).fill("nobody@farm.test");
+      if (path === "/login") await page.getByLabel("Password", { exact: true }).fill("whatever1");
+      await page.getByRole("button", { name: button }).click();
+      await expect(appAlert(page)).toContainText("Please tick “Verify you are human” first.");
+    }
   });
 
   test("forgot-password page renders", async ({ page }) => {

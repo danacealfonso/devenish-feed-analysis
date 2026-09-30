@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AuthShell, Field, Notice, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
+import { HumanCheck, type HumanCheckHandle, HUMAN_CHECK_ON, humanCheckMessage, NEEDS_HUMAN_CHECK } from "@/components/auth/HumanCheck";
 import { RECOVERY_FLAG } from "@/lib/auth/recovery";
 import { supabase } from "@/lib/supabase/client";
 
@@ -11,20 +12,26 @@ export default function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const check = useRef<HumanCheckHandle>(null);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
+    if (HUMAN_CHECK_ON && !captcha) return setError(NEEDS_HUMAN_CHECK);
+    setBusy(true);
     try {
       localStorage.setItem(RECOVERY_FLAG, "1");
     } catch {}
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback`,
+      captchaToken: captcha ?? undefined,
     });
     setBusy(false);
-    if (error) setError(error.message);
-    else setSent(true);
+    if (error) {
+      check.current?.reset();
+      setError(humanCheckMessage(error.message) ?? error.message);
+    } else setSent(true);
   }
 
   return (
@@ -45,6 +52,7 @@ export default function ForgotPasswordPage() {
             className={inputClass}
           />
         </Field>
+        {!sent && <HumanCheck ref={check} action="reset_password" onToken={setCaptcha} />}
         <button disabled={busy || sent} className={primaryButtonClass}>
           {busy ? "Sending…" : sent ? "Link sent" : "Send reset link"}
         </button>

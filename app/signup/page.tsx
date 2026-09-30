@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthShell, Field, Notice, PasswordInput, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
+import { HumanCheck, type HumanCheckHandle, HUMAN_CHECK_ON, humanCheckMessage, NEEDS_HUMAN_CHECK } from "@/components/auth/HumanCheck";
 import { supabase } from "@/lib/supabase/client";
 
 const MIN_LENGTH = 8;
@@ -18,6 +19,8 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState(false);
   const [invited, setInvited] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const check = useRef<HumanCheckHandle>(null);
 
   // Invitation links look like /signup?email=… so the invitee signs up with the address that was invited.
   useEffect(() => {
@@ -33,6 +36,7 @@ export default function SignupPage() {
     setError(null);
     if (password.length < MIN_LENGTH) return setError(`Password must be at least ${MIN_LENGTH} characters.`);
     if (password !== confirm) return setError("Passwords don’t match.");
+    if (HUMAN_CHECK_ON && !captcha) return setError(NEEDS_HUMAN_CHECK);
 
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
@@ -41,11 +45,16 @@ export default function SignupPage() {
       options: {
         data: { full_name: name.trim() },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        captchaToken: captcha ?? undefined,
       },
     });
     setBusy(false);
     if (error) {
-      setError(error.code === "user_already_exists" ? "An account with this email already exists. Sign in instead." : error.message);
+      check.current?.reset();
+      setError(
+        humanCheckMessage(error.message) ??
+          (error.code === "user_already_exists" ? "An account with this email already exists. Sign in instead." : error.message),
+      );
       return;
     }
     // With email confirmation off Supabase returns a session straight away; otherwise the user must confirm first.
@@ -114,6 +123,8 @@ export default function SignupPage() {
         <Field id="confirm" label="Confirm password">
           <PasswordInput id="confirm" value={confirm} onChange={setConfirm} autoComplete="new-password" />
         </Field>
+
+        <HumanCheck ref={check} action="signup" onToken={setCaptcha} />
 
         <button disabled={busy} className={primaryButtonClass}>
           {busy ? "Creating account…" : "Create account"}

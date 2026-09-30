@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, chooseCustomer, login, shot, stubNotify, watchErrors } from "./helpers";
+import { ACCOUNTS, chooseCustomer, login, shot, stubHumanCheck, stubNotify, watchErrors } from "./helpers";
 
 /** Deletes a question through the API with the signed-in (nutritionist) user's own session. */
 async function deleteQuestion(page: Page, id: string) {
@@ -48,11 +48,18 @@ test.describe("notifications", () => {
   test("a link opened while signed out lands on that page after sign-in", async ({ page }) => {
     const errors = watchErrors(page);
     await stubNotify(page);
+    await stubHumanCheck(page);
     await page.goto("/notifications");
     await page.waitForURL(/\/login\?next=%2Fnotifications/);
-    await page.getByLabel("Email").fill(ACCOUNTS.nutritionist.email);
-    await page.getByLabel("Password", { exact: true }).fill(ACCOUNTS.nutritionist.password);
-    await page.getByRole("button", { name: "Sign in" }).click();
+    if (process.env.E2E_SERVICE_ROLE_KEY) {
+      // The server checks CAPTCHAs, so sign in with the server key; the sign-in page then forwards to ?next=.
+      await login(page, "nutritionist");
+      await page.goto("/login?next=%2Fnotifications");
+    } else {
+      await page.getByLabel("Email").fill(ACCOUNTS.nutritionist.email);
+      await page.getByLabel("Password", { exact: true }).fill(ACCOUNTS.nutritionist.password);
+      await page.getByRole("button", { name: "Sign in" }).click();
+    }
     await page.waitForURL("**/notifications");
     await expect(page.getByRole("heading", { name: "Notifications", level: 1 })).toBeVisible();
     // Only pages on this site are followed.

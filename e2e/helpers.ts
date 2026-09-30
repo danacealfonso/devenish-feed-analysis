@@ -1,4 +1,9 @@
 import { expect, type Page } from "@playwright/test";
+import { createClient, type Session } from "@supabase/supabase-js";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://gyjmiqwkubvhqrxoeftd.supabase.co";
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "sb_publishable_-saFkRMpTnilMo0ND8inDA_fTzfRbBW";
+const AUTH_STORAGE_KEY = `sb-${new URL(SUPABASE_URL).hostname.split(".")[0]}-auth-token`;
 
 /** Demo accounts, documented in the README. Override with E2E_* env vars. */
 export const ACCOUNTS = {
@@ -44,9 +49,47 @@ export async function stubNotify(page: Page) {
   });
 }
 
+/**
+ * Tests can't tick Cloudflare's "Verify you are human" box (it exists to stop automation), so its script is
+ * replaced by one that answers at once. Supabase accepts that answer only while CAPTCHA checking is off on the
+ * server; once it's on, login() signs in with E2E_SERVICE_ROLE_KEY instead.
+ */
+export async function stubHumanCheck(page: Page) {
+  await page.route("https://challenges.cloudflare.com/turnstile/**", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: `window.turnstile = {
+        render(el, o) { el.textContent = "Human check (test stand-in)"; setTimeout(() => o.callback("e2e-test-token"), 30); return "w1"; },
+        reset(id) {}, remove(id) {},
+      };`,
+    }),
+  );
+}
+
+/** A real session without the sign-in form: a one-time link made with the server key, redeemed straight away. */
+async function sessionFor(email: string): Promise<Session> {
+  const admin = createClient(SUPABASE_URL, process.env.E2E_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+  const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  if (error) throw error;
+  const anon = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+  const { data: verified, error: err } = await anon.auth.verifyOtp({ type: "magiclink", token_hash: data.properties.hashed_token });
+  if (err || !verified.session) throw err ?? new Error("no session");
+  return verified.session;
+}
+
 export async function login(page: Page, who: AccountKey) {
   const { email, password } = ACCOUNTS[who];
   await stubNotify(page);
+  await stubHumanCheck(page);
+  if (process.env.E2E_SERVICE_ROLE_KEY) {
+    const session = await sessionFor(email);
+    await page.addInitScript(([k, v]) => {
+      if (!localStorage.getItem(k)) localStorage.setItem(k, v);
+    }, [AUTH_STORAGE_KEY, JSON.stringify(session)] as const);
+    await page.goto("/feed");
+    await expect(page.getByRole("heading", { name: "Feed analysis" })).toBeVisible();
+    return;
+  }
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);

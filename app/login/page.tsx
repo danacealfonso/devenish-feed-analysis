@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthShell, Field, Notice, PasswordInput, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
+import { HumanCheck, type HumanCheckHandle, HUMAN_CHECK_ON, humanCheckMessage, NEEDS_HUMAN_CHECK } from "@/components/auth/HumanCheck";
 import { afterSignIn } from "@/lib/auth/next";
 import { supabase } from "@/lib/supabase/client";
 
@@ -15,6 +16,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [resent, setResent] = useState(false);
+  const [captcha, setCaptcha] = useState<string | null>(null);
+  const check = useRef<HumanCheckHandle>(null);
 
   useEffect(() => {
     const e = new URLSearchParams(window.location.search).get("email");
@@ -23,13 +26,17 @@ export default function LoginPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError(null);
     setUnconfirmed(false);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (HUMAN_CHECK_ON && !captcha) return setError(NEEDS_HUMAN_CHECK);
+    setBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken: captcha ?? undefined } });
     setBusy(false);
     if (!error) return router.replace(afterSignIn());
-    if (error.code === "email_not_confirmed") {
+    check.current?.reset();
+    if (humanCheckMessage(error.message)) {
+      setError(humanCheckMessage(error.message));
+    } else if (error.code === "email_not_confirmed") {
       setUnconfirmed(true);
       setError("Please confirm your email address first. Check your inbox for the confirmation link.");
     } else if (error.code === "invalid_credentials") {
@@ -38,12 +45,14 @@ export default function LoginPage() {
   }
 
   async function resend() {
+    if (HUMAN_CHECK_ON && !captcha) return setError(NEEDS_HUMAN_CHECK);
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, captchaToken: captcha ?? undefined },
     });
-    if (error) setError(error.message);
+    check.current?.reset();
+    if (error) setError(humanCheckMessage(error.message) ?? error.message);
     else setResent(true);
   }
 
@@ -78,6 +87,8 @@ export default function LoginPage() {
             Forgot password?
           </Link>
         </p>
+
+        <HumanCheck ref={check} action="login" onToken={setCaptcha} />
 
         <button disabled={busy} className={primaryButtonClass}>
           {busy ? "Signing in…" : "Sign in"}
