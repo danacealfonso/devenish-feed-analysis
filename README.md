@@ -86,16 +86,16 @@ npm run e2e                  # Playwright browser tests against the live site (s
 
 ## Tests
 - **Unit (`npm test`, Vitest, 34 tests):** detection and parsing of all 9 sample sheets, recalculated % of intended matched against the workbook's own values, stats, dedupe, flags.
-- **End-to-end (`npm run e2e`, Playwright, 23 tests):** signs in as each demo role and checks every page, including:
+- **End-to-end (`npm run e2e`, Playwright, 25 tests):** signs in as each demo role and checks every page in Chrome, plus a smoke test in iPhone Safari (WebKit), including:
   - filters and diet drill-down, flag filters, and the ✨ explain icons (model stubbed)
-  - notification settings (changing the email address) and a live Questions badge when another user posts
+  - notification settings (changing the email address), a live Questions badge when another user posts, and sign-in returning to a link opened while signed out
   - CSV export
   - farm-team read-only restrictions
   - a real upload through the upload dialog
   - the admin console
   - phone-width layout
 
-  Tests fail on any browser console error. Tests never send real notifications (the `notify` function is stubbed; `E2E_NOTIFY=1` lets them through). The assistant test that calls the real model is opt-in: `E2E_ASSISTANT=1 npm run e2e -- assistant`. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium`.
+  Tests fail on any browser console error. Tests never send real notifications (the `notify` function is stubbed; `E2E_NOTIFY=1` lets them through). The assistant test that calls the real model is opt-in: `E2E_ASSISTANT=1 npm run e2e -- assistant`. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium webkit`.
 
 ## Database
 Migrations live in `supabase/migrations`:

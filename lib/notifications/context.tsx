@@ -51,26 +51,38 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const pathRef = useRef(pathname);
   pathRef.current = pathname;
 
+  // Badges are a convenience: a failed or cancelled request (offline, page reload) must never surface as an error.
   const refresh = useCallback(async () => {
     if (!orgId) return null;
-    const { data, error } = await supabase.rpc("unread_counts", { p_org: orgId });
-    if (error || !data) return null;
-    const d = data as { data: number; questions: number; data_seen_at: string; questions_seen_at: string };
-    setUnread({ data: d.data, questions: d.questions });
-    return d;
+    try {
+      const { data, error } = await supabase.rpc("unread_counts", { p_org: orgId });
+      if (error || !data) return null;
+      const d = data as { data: number; questions: number; data_seen_at: string; questions_seen_at: string };
+      setUnread({ data: d.data, questions: d.questions });
+      return d;
+    } catch {
+      return null;
+    }
   }, [orgId]);
+
+  const saveSeen = useCallback(
+    async (org: string, section: Section) => {
+      try {
+        await supabase.from("seen_markers").upsert({ user_id: session.user.id, org_id: org, section, seen_at: new Date().toISOString() });
+      } catch {}
+    },
+    [session.user.id],
+  );
 
   const markSeen = useCallback(
     async (section: Section) => {
       if (!orgId) return null;
       const before = await refresh();
-      await supabase
-        .from("seen_markers")
-        .upsert({ user_id: session.user.id, org_id: orgId, section, seen_at: new Date().toISOString() });
+      await saveSeen(orgId, section);
       setUnread((u) => ({ ...u, [section]: 0 }));
       return before ? (section === "data" ? before.data_seen_at : before.questions_seen_at) : null;
     },
-    [orgId, refresh, session.user.id],
+    [orgId, refresh, saveSeen],
   );
 
   const dismiss = useCallback((id: number) => setToasts((ts) => ts.filter((t) => t.id !== id)), []);
@@ -105,9 +117,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
           return next;
         });
         // Something arriving on the page you're looking at is already "seen".
-        for (const s of sections)
-          if (pathRef.current.startsWith(SECTION_PATH[s]))
-            await supabase.from("seen_markers").upsert({ user_id: session.user.id, org_id: orgId, section: s, seen_at: new Date().toISOString() });
+        for (const s of sections) if (pathRef.current.startsWith(SECTION_PATH[s])) await saveSeen(orgId, s);
         refresh();
       }, 400);
     };
@@ -128,7 +138,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       clearTimeout(timer);
       supabase.removeChannel(channel);
     };
-  }, [orgId, refresh, session.user.id]);
+  }, [orgId, refresh, saveSeen, session.user.id]);
 
   // Push messages that arrive while the portal is open are shown as toasts (see firebase-messaging-sw.js).
   useEffect(() => {

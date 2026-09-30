@@ -83,6 +83,7 @@ export async function disablePush(): Promise<PushState> {
 
 /** Keeps the service worker registered on every visit, so messages can reach an open page. */
 export async function ensureWorker() {
-  if (!PUSH_CONFIGURED || typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+  // iPhone Safari (outside a home-screen app) has no Notification object at all.
+  if (!PUSH_CONFIGURED || typeof window === "undefined" || !("serviceWorker" in navigator) || !("Notification" in window)) return;
   if (Notification.permission === "granted" && savedToken()) await registration().catch(() => {});
 }

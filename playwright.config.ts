@@ -20,5 +20,9 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } }, testIgnore: /mobile-safari/ },
+    // iPhone Safari has no push and no hover; a smoke test catches what only shows up there.
+    { name: "iphone-safari", use: { ...devices["iPhone 15"] }, testMatch: /mobile-safari\.spec\.ts/ },
+  ],
 });
