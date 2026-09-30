@@ -22,6 +22,10 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } }, testIgnore: /mobile-safari/ },
+    // Opt-in, so a default run doesn't need Firefox installed: E2E_FIREFOX=1 npx playwright test --project=firefox
+    ...(process.env.E2E_FIREFOX
+      ? [{ name: "firefox", use: { ...devices["Desktop Firefox"], viewport: { width: 1440, height: 900 } }, testIgnore: /mobile-safari/ }]
+      : []),
     // iPhone Safari has no push and no hover; a smoke test catches what only shows up there.
     { name: "iphone-safari", use: { ...devices["iPhone 15"] }, testMatch: /mobile-safari\.spec\.ts/ },
   ],
