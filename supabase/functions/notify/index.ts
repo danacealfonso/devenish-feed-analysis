@@ -293,7 +293,7 @@ async function sendTest(admin: SupabaseClient, userId: string, signInEmail: stri
       const to = (p?.email as string | null) || signInEmail;
       if (!to) throw new Error("No email address set.");
       await sendEmail(to, msg, null);
-      detail = `Sent to ${to}.`;
+      detail = `Sent to ${to}. If it isn't in the inbox within a minute, check the spam folder.`;
     }
     if (logId) await admin.from("notification_log").update({ status: "sent", detail }).eq("id", logId);
     return json(200, { ok: true, detail });
