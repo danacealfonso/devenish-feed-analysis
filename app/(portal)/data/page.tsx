@@ -5,6 +5,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import { UploadDialog } from "@/components/feed/UploadDialog";
 import { buttonPrimary, buttonSecondary, Card, Page, PageHeader } from "@/components/portal/PageHeader";
 import { usePortal } from "@/lib/data/portal";
+import { useNotifications } from "@/lib/notifications/context";
 import { downloadText, samplesToCsv } from "@/lib/export/csv";
 import { FORMAT_LABELS, type ParseWarning, type SheetFormat } from "@/lib/parsers";
 import { supabase } from "@/lib/supabase/client";
@@ -36,6 +37,12 @@ export default function DataPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { markSeen, version } = useNotifications();
+  const [seenBefore, setSeenBefore] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (org) markSeen("data").then(setSeenBefore);
+  }, [org, markSeen]);
 
   const load = useCallback(async () => {
     if (!org) return;
@@ -50,7 +57,7 @@ export default function DataPage() {
 
   useEffect(() => {
     load();
-  }, [load, samples.length]);
+  }, [load, samples.length, version.data]);
 
   async function downloadRaw(u: UploadRow) {
     if (!u.storage_path) return;
@@ -117,6 +124,9 @@ export default function DataPage() {
                           <ChevronRight size={15} className={`shrink-0 transition ${isOpen ? "rotate-90" : ""}`} />
                           <FileSpreadsheet size={16} className="shrink-0 text-navy-700" />
                           {u.file_name}
+                          {seenBefore && u.created_at > seenBefore && u.uploaded_by !== session.user.id && (
+                            <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-navy-950">New</span>
+                          )}
                         </button>
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap text-ink-2">

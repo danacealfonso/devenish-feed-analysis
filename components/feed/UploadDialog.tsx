@@ -9,6 +9,7 @@ import { usePortal } from "@/lib/data/portal";
 import { sheetSummaries, toFormulationRows, toSampleRows, type LocatedSample } from "@/lib/import/payload";
 import { FORMAT_LABELS, parseSheet, type NutrientCode, type SheetParse } from "@/lib/parsers";
 import { readWorkbook } from "@/lib/parsers/readWorkbook";
+import { announce } from "@/lib/notifications/api";
 import { supabase } from "@/lib/supabase/client";
 import { cellClass } from "@/lib/ui/status";
 
@@ -120,7 +121,9 @@ export function UploadDialog({ open, onClose }: { open: boolean; onClose: () => 
         p_formulations: toFormulationRows(review.located),
       });
       if (error) throw error;
-      setResult(data as { inserted: number; merged: number });
+      const res = data as { upload_id: string; inserted: number; merged: number };
+      announce("upload", res.upload_id);
+      setResult(res);
       setStep("done");
       await reload();
     } catch (e) {

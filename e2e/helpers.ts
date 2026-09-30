@@ -28,8 +28,25 @@ export function watchErrors(page: Page): string[] {
   return errors;
 }
 
+/**
+ * Tests never send real push notifications or emails: the notify function is answered locally.
+ * Set E2E_NOTIFY=1 to let them through (they then go to the demo accounts' real inboxes).
+ */
+export async function stubNotify(page: Page) {
+  if (process.env.E2E_NOTIFY) return;
+  await page.route("**/functions/v1/notify", async (route) => {
+    const body = route.request().postDataJSON() as { type?: string } | null;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(body?.type === "test" ? { ok: true, detail: "Sent (stubbed in tests)." } : { recipients: 0, sent: { push: 0, email: 0 } }),
+    });
+  });
+}
+
 export async function login(page: Page, who: AccountKey) {
   const { email, password } = ACCOUNTS[who];
+  await stubNotify(page);
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);

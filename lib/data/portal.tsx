@@ -159,7 +159,11 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       setOrgs(list);
       setMyRoles(Object.fromEntries((m.data ?? []).map((r) => [r.org_id, r.role as MemberRole])));
       setIsAdmin(a.data === true);
-      const want = selectId ?? store.get(ORG_KEY);
+      // Links from notifications carry ?org= so they open the right customer.
+      const fromLink = new URLSearchParams(window.location.search).get("org");
+      const linked = list.find((x) => x.id === fromLink)?.id;
+      if (linked) store.set(ORG_KEY, linked);
+      const want = selectId ?? linked ?? store.get(ORG_KEY);
       setOrgIdState(list.find((x) => x.id === want)?.id ?? list[0]?.id ?? null);
       if (!list.length) setLoading(false);
     },

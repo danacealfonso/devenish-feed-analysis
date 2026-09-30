@@ -1,8 +1,10 @@
 "use client";
 
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { Toaster } from "@/components/notifications/Toaster";
 import { Sidebar } from "@/components/portal/Sidebar";
 import { PortalProvider, usePortal } from "@/lib/data/portal";
+import { NotificationsProvider } from "@/lib/notifications/context";
 
 function Content({ children }: { children: React.ReactNode }) {
   const { ready, error, org } = usePortal();
@@ -26,12 +28,15 @@ function Content({ children }: { children: React.ReactNode }) {
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
     <PortalProvider>
-      <div className="flex min-h-screen flex-col lg:flex-row">
-        <Sidebar />
-        <main className="min-w-0 flex-1">
-          <Content>{children}</Content>
-        </main>
-      </div>
+      <NotificationsProvider>
+        <div className="flex min-h-screen flex-col lg:flex-row">
+          <Sidebar />
+          <main className="min-w-0 flex-1">
+            <Content>{children}</Content>
+          </main>
+        </div>
+        <Toaster />
+      </NotificationsProvider>
     </PortalProvider>
   );
 }

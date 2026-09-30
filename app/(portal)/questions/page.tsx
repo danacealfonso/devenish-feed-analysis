@@ -8,6 +8,8 @@ import { AskAI } from "@/components/assistant/AskAI";
 import { buttonPrimary, buttonSecondary, inputBase, Page, PageHeader } from "@/components/portal/PageHeader";
 import { askAssistant, questionAsk } from "@/lib/assistant/ask";
 import { usePortal } from "@/lib/data/portal";
+import { announce } from "@/lib/notifications/api";
+import { useNotifications } from "@/lib/notifications/context";
 import { supabase } from "@/lib/supabase/client";
 import { pillClass } from "@/lib/ui/status";
 
@@ -53,6 +55,12 @@ function Questions() {
   const selectedId = params.get("id");
   const composing = params.get("new") === "1";
   const me = (session.user.user_metadata?.full_name as string | undefined)?.trim() || session.user.email || "Me";
+  const { markSeen, version } = useNotifications();
+  const [seenBefore, setSeenBefore] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (org) markSeen("questions").then(setSeenBefore);
+  }, [org, markSeen]);
 
   const load = useCallback(async () => {
     if (!org) return;
@@ -63,7 +71,7 @@ function Questions() {
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, version.questions]);
 
   const visible = list.filter((q) => filter === "all" || q.status !== "closed");
   const selected = list.find((q) => q.id === selectedId) ?? null;
@@ -116,7 +124,12 @@ function Questions() {
                   className={`block w-full px-4 py-3 text-left hover:bg-page ${q.id === selectedId ? "bg-[#eef0fb]" : ""}`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-semibold">{q.subject}</span>
+                    <span className="font-semibold">
+                      {seenBefore && q.updated_at > seenBefore && q.created_by !== session.user.id && (
+                        <span className="mr-1.5 inline-block size-2 rounded-full bg-accent align-middle" aria-label="New activity" />
+                      )}
+                      {q.subject}
+                    </span>
                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${pillClass(STATUS_PILL[q.status])}`}>{q.status}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-ink-3">
@@ -182,8 +195,9 @@ function NewQuestion({
       .select("id")
       .single();
     setBusy(false);
-    if (error) setError(error.message);
-    else onCreated(data.id);
+    if (error) return setError(error.message);
+    announce("question", data.id);
+    onCreated(data.id);
   }
 
   return (
@@ -212,6 +226,7 @@ function NewQuestion({
 
 function Thread({ q, me, onChange }: { q: Question; me: string; onChange: () => void }) {
   const { locations, can } = usePortal();
+  const { version } = useNotifications();
   const [replies, setReplies] = useState<Reply[]>([]);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
@@ -223,14 +238,19 @@ function Thread({ q, me, onChange }: { q: Question; me: string; onChange: () => 
   }, [q.id]);
   useEffect(() => {
     load();
-  }, [load]);
+  }, [load, version.questions]);
 
   async function reply(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.from("question_replies").insert({ question_id: q.id, body: text.trim(), author_name: me });
+    const { data, error } = await supabase
+      .from("question_replies")
+      .insert({ question_id: q.id, body: text.trim(), author_name: me })
+      .select("id")
+      .single();
     setBusy(false);
     if (error) return setError(error.message);
+    announce("reply", data.id);
     setText("");
     await load();
     onChange();

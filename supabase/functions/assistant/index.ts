@@ -12,6 +12,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const MODEL = "claude-opus-5";
 const PER_USER_DAILY = 40;
 const GLOBAL_DAILY = 500;
+// Temporary higher caps while the prototype is being reviewed; the normal caps return automatically.
+const BOOST = { until: "2026-10-04T00:00:00Z", perUser: 150, global: 1500 };
 const MAX_CONTEXT_CHARS = 400_000;
 const MAX_QUESTION_CHARS = 4_000;
 const MAX_HISTORY = 24;
@@ -97,9 +99,12 @@ Deno.serve(async (req) => {
     admin.from("assistant_usage").select("id", { count: "exact", head: true }).eq("user_id", user.id).gte("created_at", since),
     admin.from("assistant_usage").select("id", { count: "exact", head: true }).gte("created_at", since),
   ]);
-  if ((mine.count ?? 0) >= PER_USER_DAILY)
-    return json(429, { error: `You've reached today's limit of ${PER_USER_DAILY} questions. Try again tomorrow.` });
-  if ((all.count ?? 0) >= GLOBAL_DAILY) return json(429, { error: "The assistant has reached today's overall limit. Try again tomorrow." });
+  const boosted = Date.now() < Date.parse(BOOST.until);
+  const perUser = boosted ? BOOST.perUser : PER_USER_DAILY;
+  const overall = boosted ? BOOST.global : GLOBAL_DAILY;
+  if ((mine.count ?? 0) >= perUser)
+    return json(429, { error: `You've reached today's limit of ${perUser} questions. Try again tomorrow.` });
+  if ((all.count ?? 0) >= overall) return json(429, { error: "The assistant has reached today's overall limit. Try again tomorrow." });
 
   // --- Ask Claude, streaming ------------------------------------------------------------------
   const client = new Anthropic({ apiKey });

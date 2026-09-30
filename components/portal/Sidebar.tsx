@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  Bell,
   ChevronDown,
   Database,
   FileText,
@@ -17,23 +18,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Brand } from "@/components/Brand";
 import { ROLE_LABEL, usePortal } from "@/lib/data/portal";
+import { useNotifications, type Section } from "@/lib/notifications/context";
 import { supabase } from "@/lib/supabase/client";
 
-const NAV = [
+const NAV: { label: string; icon: typeof Bell; href: string; also?: string[]; badge?: Section }[] = [
   { label: "Overview", icon: LayoutGrid, href: "/overview" },
   { label: "Dashboard", icon: BarChart3, href: "/dashboard" },
   { label: "Compare my flocks", icon: LineChart, href: "/compare" },
-  { label: "Data", icon: Database, href: "/data" },
+  { label: "Data", icon: Database, href: "/data", badge: "data" },
   { label: "Feed", icon: FlaskConical, href: "/feed" },
-  { label: "Questions", icon: MessageSquare, href: "/questions" },
+  { label: "Questions", icon: MessageSquare, href: "/questions", badge: "questions" },
   { label: "Reports", icon: FileText, href: "/reports" },
   { label: "Operation", icon: SlidersHorizontal, href: "/operation", also: ["/settings"] },
+  { label: "Notifications", icon: Bell, href: "/notifications" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { orgs, org, setOrgId, session, role, actualRole, isAdmin, previewAsProducer, setPreviewAsProducer } = usePortal();
-  const nav = isAdmin ? [...NAV, { label: "Admin", icon: ShieldCheck, href: "/admin", also: undefined }] : NAV;
+  const { unread } = useNotifications();
+  const nav = isAdmin ? [...NAV, { label: "Admin", icon: ShieldCheck, href: "/admin" }] : NAV;
   const email = session.user.email ?? "";
   const name = (session.user.user_metadata?.full_name as string | undefined)?.trim() || email;
   const initials = name
@@ -80,7 +84,8 @@ export function Sidebar() {
         {org?.is_demo && <p className="mt-2 px-1 text-[11px] text-white/50">Demo data from the sample workbook</p>}
       </div>
       <nav className="mt-4 flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible">
-        {nav.map(({ label, icon: Icon, href, also }) => {
+        {nav.map(({ label, icon: Icon, href, also, badge }) => {
+          const count = badge ? unread[badge] : 0;
           const active = [href, ...(also ?? [])].some((p) => pathname === p || pathname.startsWith(`${p}/`));
           const cls = `flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 text-[15px] ${
             active ? "bg-navy-800 font-semibold text-accent" : "text-white/85"
@@ -88,6 +93,12 @@ export function Sidebar() {
           return href ? (
             <Link key={label} href={href} className={`${cls} hover:bg-navy-800`} aria-current={active ? "page" : undefined}>
               <Icon size={18} /> {label}
+              {count > 0 && (
+                <span className="ml-auto min-w-5 rounded-full bg-accent px-1.5 py-0.5 text-center text-[11px] leading-4 font-bold text-navy-950">
+                  {count > 9 ? "9+" : count}
+                  <span className="sr-only"> new</span>
+                </span>
+              )}
             </Link>
           ) : (
             <span key={label} className={`${cls} cursor-not-allowed opacity-60`} title="Not part of this prototype">
