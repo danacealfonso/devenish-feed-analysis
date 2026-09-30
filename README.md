@@ -53,6 +53,7 @@ People find out there's something new without having to check the portal: a feed
 - **Email:** the same events, sent from a Gmail account over SMTP. Each person can switch email off or send it to a different address than their sign-in email.
 - **Badges:** **Data** and **Questions** in the sidebar show how many uploads, questions and replies arrived since you last looked. They update live (Supabase Realtime), and new rows are marked on those pages.
 - **Settings:** per person, which events to be told about, applied to both channels. Nobody is notified about their own actions.
+- **Limits:** at most 100 emails a day across the whole portal (`EMAIL_DAILY_CAP` secret to change it), because the demo logins are public and mail goes out from a real Gmail account. Test sends are limited to 10 an hour per person.
 - **How it works:** after creating an upload, question or reply, the browser calls the `notify` Edge Function with its id. The function loads the item itself and only sends if the caller created it in the last 15 minutes. `notification_log` makes each send happen once (`supabase/functions/notify`, `…09_notifications.sql`, `lib/notifications/`, `public/firebase-messaging-sw.js`).
 - **Setup:**
   ```bash
