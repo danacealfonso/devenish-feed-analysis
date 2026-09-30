@@ -10,11 +10,11 @@ export function Toaster() {
   const router = useRouter();
   if (!toasts.length) return null;
 
+  // Links always point into this app; open them on whatever address the portal is running at.
   const open = (url: string, id: number) => {
     dismiss(id);
     const u = new URL(url, window.location.origin);
-    if (u.origin === window.location.origin) router.push(`${u.pathname}${u.search}`);
-    else window.location.assign(u.href);
+    router.push(`${u.pathname}${u.search}`);
   };
 
   return (

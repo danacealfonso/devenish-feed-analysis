@@ -43,7 +43,9 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin).href;
+  // Links always point into this app; open them on this worker's own origin (production, preview or localhost).
+  const link = new URL((event.notification.data && event.notification.data.url) || "/", self.location.origin);
+  const url = new URL(link.pathname + link.search, self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
       const same = wins.find((w) => new URL(w.url).origin === self.location.origin);

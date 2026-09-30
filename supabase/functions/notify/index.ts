@@ -17,6 +17,8 @@ import nodemailer from "npm:nodemailer@6.9.16";
 const APP_URL = (Deno.env.get("APP_URL") ?? "https://devenish-a4843.web.app").replace(/\/$/, "");
 const FRESH_MINUTES = 15;
 const TESTS_PER_HOUR = 10;
+// The demo logins are public and mail goes out from a real Gmail account, so cap it for the whole portal.
+const EMAILS_PER_DAY = Number(Deno.env.get("EMAIL_DAILY_CAP") ?? 100);
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -114,10 +116,15 @@ Deno.serve(async (req) => {
   if (claimErr) return json(500, { error: claimErr.message });
 
   const msg = ev.message;
+  let emailBudget = await emailsLeftToday(admin);
   const results = await Promise.all(
     (claimed ?? []).map(async (c) => {
       let status = "sent";
       let detail: string | null = null;
+      if (c.channel === "email" && emailBudget-- <= 0) {
+        await admin.from("notification_log").update({ status: "skipped", detail: "daily email cap reached" }).eq("id", c.id);
+        return { channel: c.channel as Channel, ok: false };
+      }
       try {
         if (c.channel === "push") {
           const userTokens = (tokens ?? []).filter((t) => t.user_id === c.user_id).map((t) => t.token as string);
@@ -253,6 +260,8 @@ async function sendTest(admin: SupabaseClient, userId: string, signInEmail: stri
     .eq("event_type", "test")
     .gte("created_at", hourAgo);
   if ((count ?? 0) >= TESTS_PER_HOUR) return json(429, { error: "That's a lot of tests. Try again in an hour." });
+  if (channel === "email" && (await emailsLeftToday(admin)) <= 0)
+    return json(200, { ok: false, error: "The portal has sent its email allowance for today. Try again tomorrow." });
 
   const msg: Message = {
     title: "Test notification",
@@ -289,6 +298,16 @@ async function sendTest(admin: SupabaseClient, userId: string, signInEmail: stri
     if (logId) await admin.from("notification_log").update({ status: "failed", detail }).eq("id", logId);
     return json(200, { ok: false, error: detail });
   }
+}
+
+async function emailsLeftToday(admin: SupabaseClient): Promise<number> {
+  const { count } = await admin
+    .from("notification_log")
+    .select("id", { count: "exact", head: true })
+    .eq("channel", "email")
+    .eq("status", "sent")
+    .gte("created_at", new Date(Date.now() - 24 * 3600_000).toISOString());
+  return EMAILS_PER_DAY - (count ?? 0);
 }
 
 // ---------------------------------------------------------------------------------------------
