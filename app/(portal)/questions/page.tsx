@@ -1,10 +1,12 @@
 "use client";
 
-import { MessageSquarePlus, Send } from "lucide-react";
+import { MessageSquarePlus, Send, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
+import { AskAI } from "@/components/assistant/AskAI";
 import { buttonPrimary, buttonSecondary, inputBase, Page, PageHeader } from "@/components/portal/PageHeader";
+import { askAssistant, questionAsk } from "@/lib/assistant/ask";
 import { usePortal } from "@/lib/data/portal";
 import { supabase } from "@/lib/supabase/client";
 import { pillClass } from "@/lib/ui/status";
@@ -102,7 +104,12 @@ function Questions() {
           </div>
           <ul className="divide-y divide-line">
             {visible.map((q) => (
-              <li key={q.id}>
+              <li key={q.id} className="group/ai relative">
+                <AskAI
+                  ask={questionAsk(q, locations.find((l) => l.id === q.location_id)?.name, q.diet_key)}
+                  name="Ask AI about this question"
+                  className="absolute right-3 bottom-2.5 z-10"
+                />
                 <button
                   onClick={() => go(`?id=${q.id}`)}
                   aria-current={q.id === selectedId ? "true" : undefined}
@@ -254,7 +261,10 @@ function Thread({ q, me, onChange }: { q: Question; me: string; onChange: () => 
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => askAssistant(questionAsk(q, loc?.name, q.diet_key))} className={buttonSecondary}>
+            <Sparkles size={15} className="text-accent" /> Explain with AI
+          </button>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pillClass(STATUS_PILL[q.status])}`}>{q.status}</span>
           {q.status === "open" && can.manage && <button onClick={() => setStatus("answered")} className={buttonSecondary}>Mark answered</button>}
           {q.status !== "closed" ? (

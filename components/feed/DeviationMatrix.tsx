@@ -3,11 +3,13 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
+import { AskAI } from "@/components/assistant/AskAI";
 import { STATUS_RANK } from "@/lib/analysis/deviation";
 import { fmtDate, fmtPct, fmtVal } from "@/lib/analysis/flags";
 import { PHASE_ORDER } from "@/lib/analysis/merge";
 import { NUTRIENT_META } from "@/lib/analysis/tolerances";
 import type { ResultView, SampleView } from "@/lib/analysis/view";
+import { cellAsk } from "@/lib/assistant/ask";
 import type { NutrientCode } from "@/lib/parsers/types";
 import { cellClass, glyph, STATUS_LABEL } from "@/lib/ui/status";
 
@@ -57,7 +59,7 @@ function group(samples: SampleView[]): LocationGroup[] {
   return [...locs.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function Cell({ r, n }: { r: ResultView | undefined; n: NutrientCode }) {
+function Cell({ r, n, s }: { r: ResultView | undefined; n: NutrientCode; s: SampleView }) {
   const meta = NUTRIENT_META[n];
   if (!r || r.analyzed == null)
     return (
@@ -73,8 +75,9 @@ function Cell({ r, n }: { r: ResultView | undefined; n: NutrientCode }) {
     (r.intended != null ? ` vs ${fmtVal(r.intended, meta.unit)} intended${offset} = ${fmtPct(pct)}` : "") +
     ` · ${STATUS_LABEL[status]}${reason ? ` (${reason})` : ""}`;
   return (
-    <td className={`border-l border-line px-2 py-1.5 text-right ${cellClass(status, direction)}`} title={tip}>
+    <td className={`group/ai relative border-l border-line px-2 py-1.5 text-right ${cellClass(status, direction)}`} title={tip}>
       <span className="sr-only">{tip}</span>
+      <AskAI ask={cellAsk(s, n, r)} name={`Ask AI about ${meta.short}`} className="absolute top-1/2 left-1 -translate-y-1/2" />
       <div aria-hidden className="font-mono text-[13px] leading-tight whitespace-nowrap">
         {pct != null ? fmtPct(pct) : fmtVal(r.analyzed, meta.unit)}
         {g && <span className="ml-0.5 text-[10px]">{g}</span>}
@@ -211,7 +214,7 @@ export function DeviationMatrix({ samples, nutrients }: { samples: SampleView[];
                                 </th>
                                 <td className="px-3 py-1.5 text-xs whitespace-nowrap text-ink-2">{fmtDate(latest.sampledOn)}</td>
                                 {nutrients.map((n) => (
-                                  <Cell key={n} r={latest.results[n]} n={n} />
+                                  <Cell key={n} r={latest.results[n]} n={n} s={latest} />
                                 ))}
                               </tr>
                               {isOpen &&
@@ -222,7 +225,7 @@ export function DeviationMatrix({ samples, nutrients }: { samples: SampleView[];
                                     </th>
                                     <td className="px-3 py-1 text-xs whitespace-nowrap text-ink-3">{fmtDate(s.sampledOn)}</td>
                                     {nutrients.map((n) => (
-                                      <Cell key={n} r={s.results[n]} n={n} />
+                                      <Cell key={n} r={s.results[n]} n={n} s={s} />
                                     ))}
                                   </tr>
                                 ))}

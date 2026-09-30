@@ -3,11 +3,12 @@
 import { Send, Sparkles, Square, Trash2, X } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { ASK_EVENT, type AskDetail } from "@/lib/assistant/ask";
 import { buildAssistantContext } from "@/lib/assistant/context";
 import { usePortal } from "@/lib/data/portal";
 import { supabase } from "@/lib/supabase/client";
 
-type Turn = { role: "user" | "assistant"; content: string };
+type Turn = { role: "user" | "assistant"; content: string; label?: string };
 
 const ENDPOINT = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/assistant`;
 
@@ -77,11 +78,11 @@ function Assistant() {
     return `[The user is on the ${page} page${loc ? `, location ${loc}` : ""}${diet ? `, diet ${diet}` : ""}.]`;
   }
 
-  async function ask(question: string) {
+  async function ask(question: string, label?: string) {
     const q = question.trim();
     if (!q || busy || !org) return;
     // The page note travels with the question and stays in history unchanged, so the cached prefix holds.
-    const userTurn: Turn = { role: "user", content: `${pageContext()}\n\n${q}` };
+    const userTurn: Turn = { role: "user", content: `${pageContext()}\n\n${q}`, label };
     const history = [...turns, userTurn];
     setTurns([...history, { role: "assistant", content: "" }]);
     setInput("");
@@ -99,7 +100,7 @@ function Assistant() {
           Authorization: `Bearer ${data.session?.access_token ?? session.access_token}`,
           apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         },
-        body: JSON.stringify({ orgId: org.id, context, messages: history }),
+        body: JSON.stringify({ orgId: org.id, context, messages: history.map(({ role, content }) => ({ role, content })) }),
       });
       if (!res.ok || !res.body) {
         const err = await res.json().catch(() => ({ error: `The assistant is unavailable (${res.status}).` }));
@@ -123,6 +124,29 @@ function Assistant() {
       abort.current = null;
     }
   }
+
+  // "Ask AI" icons elsewhere in the portal send their question through this event.
+  const askRef = useRef(ask);
+  askRef.current = ask;
+  const pending = useRef<AskDetail | null>(null);
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      pending.current = (e as CustomEvent<AskDetail>).detail;
+      setOpen(true);
+      if (busy) abort.current?.abort();
+      else if (ready) flush();
+    };
+    const flush = () => {
+      const d = pending.current;
+      if (!d) return;
+      pending.current = null;
+      askRef.current(d.prompt, d.label);
+    };
+    window.addEventListener(ASK_EVENT, onAsk);
+    // A question that arrived mid-answer or before the data loaded is sent once both are settled.
+    if (!busy && ready) flush();
+    return () => window.removeEventListener(ASK_EVENT, onAsk);
+  }, [busy, ready, org?.id]);
 
   return (
     <>
@@ -179,7 +203,7 @@ function Assistant() {
             {turns.map((t, i) =>
               t.role === "user" ? (
                 <div key={i} className="ml-8 rounded-2xl rounded-br-sm bg-navy-900 px-4 py-2.5 text-sm text-white">
-                  {t.content.replace(/^\[The user is on[^\]]*\]\n\n/, "")}
+                  {t.label ?? t.content.replace(/^\[The user is on[^\]]*\]\n\n/, "")}
                 </div>
               ) : (
                 <div key={i} className="text-sm leading-relaxed text-ink">

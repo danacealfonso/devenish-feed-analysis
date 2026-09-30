@@ -15,6 +15,42 @@ test.describe("AI assistant", () => {
     expect(errors).toEqual([]);
   });
 
+  test("flag filters, and AI icons on flags and matrix cells send to the panel", async ({ page }) => {
+    const errors = watchErrors(page);
+    const asked: string[] = [];
+    // Stub the model so this runs free; we only check what the page sends and shows.
+    await page.route("**/functions/v1/assistant", async (route) => {
+      const body = route.request().postDataJSON() as { messages: { content: string }[] };
+      asked.push(body.messages[body.messages.length - 1].content);
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "Stubbed explanation." });
+    });
+    await login(page, "nutritionist");
+    await chooseCustomer(page, "Customer D");
+
+    const attention = page.locator("#attention").locator("xpath=ancestor::section");
+    const items = attention.getByRole("listitem");
+    await expect(items.first()).toBeVisible();
+    await attention.getByRole("button", { name: /action$/ }).click();
+    await expect(attention.getByText(/\d+ of \d+ shown/)).toBeVisible();
+    for (const t of await items.locator("p.font-semibold").allInnerTexts()) expect(t).toMatch(/^Action:\s/);
+    await attention.getByRole("button", { name: "Clear filters" }).click();
+
+    await items.first().hover();
+    await items.first().getByRole("button", { name: "Ask AI about this flag" }).click();
+    const panel = page.getByRole("complementary", { name: "AI assistant" });
+    await expect(panel.getByText("Stubbed explanation.")).toBeVisible();
+    expect(asked[0]).toContain("Needs attention");
+
+    await panel.getByRole("button", { name: "Close assistant" }).click();
+    const cell = page.getByRole("cell").filter({ has: page.getByRole("button", { name: "Ask AI about Ca", exact: true }) }).first();
+    await cell.hover();
+    await cell.getByRole("button", { name: "Ask AI about Ca" }).click();
+    await expect(panel.getByText(/^Explain Ca:/)).toBeVisible();
+    expect(asked[1]).toContain("Calcium");
+    await shot(page, "assistant-ask-ai");
+    expect(errors).toEqual([]);
+  });
+
   // Calls the real model (costs money). Run with: E2E_ASSISTANT=1 npm run e2e -- assistant
   test("answers a question from the customer's data", async ({ page }) => {
     test.skip(!process.env.E2E_ASSISTANT, "set E2E_ASSISTANT=1 to call the live model");

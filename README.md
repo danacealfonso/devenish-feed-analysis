@@ -34,6 +34,7 @@ These rules are enforced in the database (row-level security and permission-chec
 ## AI assistant
 Every portal page has an **Ask about this data** button that opens a chat panel. It explains the current customer's feed results in plain language: what's off, by how much, why it matters for the hens, and what looks like a data problem rather than a feed problem.
 
+- **Explain in context:** hover any flag in *Needs attention*, any cell in the deviation matrix, or any question, and a ✨ icon appears. Clicking it opens the panel and asks for an explanation of that item, checked against the diet's history, other locations and lab vs NIR. Questions also have an **Explain with AI** button. The wiring is `lib/assistant/ask.ts` and `components/assistant/AskAI.tsx`.
 - **How it works:**
   - The browser builds a text snapshot of exactly what the portal shows: % of intended, statuses, flags, stats and tolerances (`lib/assistant/context.ts`).
   - The Supabase Edge Function `supabase/functions/assistant` checks that the user is signed in and can view that customer, enforces daily caps (40 questions per user, 500 overall), and streams the answer from **Claude Opus 5**.
@@ -64,8 +65,8 @@ npm run e2e                  # Playwright browser tests against the live site (s
 
 ## Tests
 - **Unit (`npm test`, Vitest, 34 tests):** detection and parsing of all 9 sample sheets, recalculated % of intended matched against the workbook's own values, stats, dedupe, flags.
-- **End-to-end (`npm run e2e`, Playwright, 18 tests):** signs in as each demo role and checks every page, including:
-  - filters and diet drill-down
+- **End-to-end (`npm run e2e`, Playwright, 19 tests):** signs in as each demo role and checks every page, including:
+  - filters and diet drill-down, flag filters, and the ✨ explain icons (model stubbed)
   - CSV export
   - farm-team read-only restrictions
   - a real upload through the upload dialog
