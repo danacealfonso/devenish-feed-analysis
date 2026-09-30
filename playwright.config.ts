@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Local, git-ignored secrets for tests (E2E_SERVICE_ROLE_KEY): the sign-in form now needs Cloudflare's human check,
+// which automation can't pass, so tests sign in with a one-time server-generated link instead.
+try {
+  process.loadEnvFile(".env.test.local");
+} catch {}
+
 /**
  * End-to-end tests run against the deployed site by default.
  *   npm run e2e                               # live: https://devenish-a4843.web.app

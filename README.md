@@ -95,7 +95,7 @@ npm run e2e                  # Playwright browser tests against the live site (s
   - the admin console
   - phone-width layout
 
-  Tests fail on any browser console error. Tests never send real notifications (the `notify` function is stubbed; `E2E_NOTIFY=1` lets them through). The assistant test that calls the real model is opt-in: `E2E_ASSISTANT=1 npm run e2e -- assistant`. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium webkit`. To run the desktop tests in Firefox too: `npx playwright install firefox`, then `E2E_FIREFOX=1 npx playwright test --project=firefox`.
+  Tests fail on any browser console error. Sign-in needs Cloudflare's human check, which automation can't pass, so tests sign in with a one-time link made with the Supabase secret key: put `E2E_SERVICE_ROLE_KEY=…` in `.env.test.local` (git-ignored). Tests never send real notifications (the `notify` function is stubbed; `E2E_NOTIFY=1` lets them through). The assistant test that calls the real model is opt-in: `E2E_ASSISTANT=1 npm run e2e -- assistant`. They run against https://devenish-a4843.web.app by default; set `E2E_BASE_URL=http://localhost:3000` to test a local build. First run: `npx playwright install chromium webkit`. To run the desktop tests in Firefox too: `npx playwright install firefox`, then `E2E_FIREFOX=1 npx playwright test --project=firefox`.
 
 ## Database
 Migrations live in `supabase/migrations`:
