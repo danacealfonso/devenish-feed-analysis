@@ -139,7 +139,10 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (session === null) router.replace("/login");
+    if (session !== null) return;
+    // Remember where they were going (e.g. a link in a notification email), so sign-in can take them there.
+    const here = `${window.location.pathname}${window.location.search}`;
+    router.replace(here === "/feed" || here === "/" ? "/login" : `/login?next=${encodeURIComponent(here)}`);
   }, [session, router]);
 
   const userId = session?.user.id;

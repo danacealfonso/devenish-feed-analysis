@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthShell, Field, Notice, PasswordInput, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
+import { afterSignIn } from "@/lib/auth/next";
 import { supabase } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -27,7 +28,7 @@ export default function LoginPage() {
     setUnconfirmed(false);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (!error) return router.replace("/feed");
+    if (!error) return router.replace(afterSignIn());
     if (error.code === "email_not_confirmed") {
       setUnconfirmed(true);
       setError("Please confirm your email address first. Check your inbox for the confirmation link.");

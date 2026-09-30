@@ -4,13 +4,14 @@ import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand } from "@/components/Brand";
+import { afterSignIn } from "@/lib/auth/next";
 import { supabase } from "@/lib/supabase/client";
 
 /** Two-panel layout shared by sign-in and sign-up; bounces signed-in users to the portal. */
 export function AuthShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => data.session && router.replace("/feed"));
+    supabase.auth.getSession().then(({ data }) => data.session && router.replace(afterSignIn()));
   }, [router]);
 
   return (

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ACCOUNTS, chooseCustomer, login, shot, watchErrors } from "./helpers";
+import { ACCOUNTS, chooseCustomer, login, shot, stubNotify, watchErrors } from "./helpers";
 
 /** Deletes a question through the API with the signed-in (nutritionist) user's own session. */
 async function deleteQuestion(page: Page, id: string) {
@@ -41,6 +41,22 @@ test.describe("notifications", () => {
     await page.getByLabel("Send emails to").fill("");
     await page.getByRole("button", { name: "Save email" }).click();
     await expect(page.getByText(`Notifications will be emailed to ${ACCOUNTS.nutritionist.email}.`)).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test("a link opened while signed out lands on that page after sign-in", async ({ page }) => {
+    const errors = watchErrors(page);
+    await stubNotify(page);
+    await page.goto("/notifications");
+    await page.waitForURL(/\/login\?next=%2Fnotifications/);
+    await page.getByLabel("Email").fill(ACCOUNTS.nutritionist.email);
+    await page.getByLabel("Password", { exact: true }).fill(ACCOUNTS.nutritionist.password);
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.waitForURL("**/notifications");
+    await expect(page.getByRole("heading", { name: "Notifications", level: 1 })).toBeVisible();
+    // Only pages on this site are followed.
+    await page.goto("/login?next=//evil.example.com");
+    await page.waitForURL("**/feed");
     expect(errors).toEqual([]);
   });
 
