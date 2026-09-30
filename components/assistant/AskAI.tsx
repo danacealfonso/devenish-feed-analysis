@@ -29,9 +29,9 @@ export function AskAI({
         e.stopPropagation();
         askAssistant(ask);
       }}
-      className={`grid size-6 shrink-0 place-items-center rounded-full bg-navy-900 text-accent shadow transition hover:scale-110 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-700 ${
+      className={`grid shrink-0 place-items-center rounded-full bg-navy-900 text-accent shadow transition hover:scale-110 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy-700 ${
         always ? "" : "pointer-events-auto opacity-0 group-hover/ai:opacity-100 group-focus-within/ai:opacity-100 [@media(hover:none)]:opacity-100"
-      } ${className}`}
+      } ${/\bsize-/.test(className) ? "" : "size-6"} ${className}`}
     >
       <Sparkles size={13} aria-hidden />
     </button>

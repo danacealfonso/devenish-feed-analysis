@@ -77,7 +77,7 @@ function Cell({ r, n, s }: { r: ResultView | undefined; n: NutrientCode; s: Samp
   return (
     <td className={`group/ai relative border-l border-line px-2 py-1.5 text-right ${cellClass(status, direction)}`} title={tip}>
       <span className="sr-only">{tip}</span>
-      <AskAI ask={cellAsk(s, n, r)} name={`Ask AI about ${meta.short}`} className="absolute top-1/2 left-1 -translate-y-1/2" />
+      <AskAI ask={cellAsk(s, n, r)} name={`Ask AI about ${meta.short}`} className="absolute top-1/2 left-0 z-[5] size-5 -translate-x-1/2 -translate-y-1/2" />
       <div aria-hidden className="font-mono text-[13px] leading-tight whitespace-nowrap">
         {pct != null ? fmtPct(pct) : fmtVal(r.analyzed, meta.unit)}
         {g && <span className="ml-0.5 text-[10px]">{g}</span>}
