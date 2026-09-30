@@ -17,6 +17,8 @@ import nodemailer from "npm:nodemailer@6.9.16";
 const APP_URL = (Deno.env.get("APP_URL") ?? "https://devenish-a4843.web.app").replace(/\/$/, "");
 const FRESH_MINUTES = 15;
 const TESTS_PER_HOUR = 10;
+// Push tests only ever reach the person clicking, so they get more room while the prototype is being reviewed.
+const PUSH_TEST_BOOST = { until: "2026-10-08T00:00:00+08:00", perHour: 60 };
 // The demo logins are public and mail goes out from a real Gmail account, so cap it for the whole portal.
 const EMAILS_PER_DAY = Number(Deno.env.get("EMAIL_DAILY_CAP") ?? 100);
 
@@ -258,8 +260,10 @@ async function sendTest(admin: SupabaseClient, userId: string, signInEmail: stri
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
     .eq("event_type", "test")
+    .eq("channel", channel)
     .gte("created_at", hourAgo);
-  if ((count ?? 0) >= TESTS_PER_HOUR) return json(429, { error: "That's a lot of tests. Try again in an hour." });
+  const limit = channel === "push" && Date.now() < Date.parse(PUSH_TEST_BOOST.until) ? PUSH_TEST_BOOST.perHour : TESTS_PER_HOUR;
+  if ((count ?? 0) >= limit) return json(429, { error: "That's a lot of tests. Try again in an hour." });
   if (channel === "email" && (await emailsLeftToday(admin)) <= 0)
     return json(200, { ok: false, error: "The portal has sent its email allowance for today. Try again tomorrow." });
 
