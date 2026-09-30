@@ -83,7 +83,8 @@ export function Sidebar() {
         )}
         {org?.is_demo && <p className="mt-2 px-1 text-[11px] text-white/50">Demo data from the sample workbook</p>}
       </div>
-      <nav className="mt-4 flex gap-1 overflow-x-auto px-2 pb-2 lg:flex-1 lg:flex-col lg:overflow-visible">
+      {/* On a laptop the links scroll inside the menu, so the account row with Sign out stays on screen. */}
+      <nav className="mt-4 flex gap-1 overflow-x-auto px-2 pb-2 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-x-hidden lg:overflow-y-auto">
         {nav.map(({ label, icon: Icon, href, also, badge }) => {
           const count = badge ? unread[badge] : 0;
           const active = [href, ...(also ?? [])].some((p) => pathname === p || pathname.startsWith(`${p}/`));
@@ -106,9 +107,16 @@ export function Sidebar() {
             </span>
           );
         })}
+        {/* Phones have no account row, so Sign out goes at the end of the menu. */}
+        <button
+          onClick={() => supabase.auth.signOut()}
+          className="flex shrink-0 items-center gap-3 rounded-lg px-4 py-3 text-[15px] text-white/85 hover:bg-navy-800 lg:hidden"
+        >
+          <LogOut size={18} /> Sign out
+        </button>
       </nav>
       {actualRole !== "producer" && (
-        <label className="mx-4 mb-3 flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-navy-800 px-3 py-2 text-xs text-white/80">
+        <label className="mx-4 mt-2 mb-3 shrink-0 flex cursor-pointer items-center justify-between gap-3 rounded-lg bg-navy-800 px-3 py-2 text-xs text-white/80">
           <span>
             Preview as customer
             <span className="block text-[11px] text-white/50">See what the farm team sees</span>
@@ -122,7 +130,7 @@ export function Sidebar() {
           />
         </label>
       )}
-      <div className="hidden items-center gap-3 border-t border-white/10 px-4 py-4 lg:flex">
+      <div className="hidden shrink-0 items-center gap-3 border-t border-white/10 px-4 py-4 lg:flex">
         <div className="grid size-10 place-items-center rounded-full bg-navy-700 text-sm font-semibold">
           {initials}
         </div>

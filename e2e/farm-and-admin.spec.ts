@@ -79,4 +79,15 @@ test.describe("Devenish admin", () => {
     await shot(page, "admin");
     expect(errors).toEqual([]);
   });
+
+  test("sign out stays reachable on a short laptop screen", async ({ page }) => {
+    // The admin has the longest menu; on a 720px-tall screen it used to push Sign out off the bottom.
+    await page.setViewportSize({ width: 1366, height: 720 });
+    await login(page, "admin");
+    const signOut = page.getByRole("button", { name: "Sign out" }).last();
+    await expect(signOut).toBeInViewport();
+    await expect(page.getByRole("link", { name: "Admin" })).toBeAttached();
+    await signOut.click();
+    await page.waitForURL(/\/login/); // may carry ?next= back to the page they were on
+  });
 });

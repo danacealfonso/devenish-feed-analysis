@@ -20,5 +20,8 @@ test("iPhone Safari: every main page loads cleanly and fits the screen", async (
   // No web push here: the page says so instead of offering a button that can't work.
   await expect(page.getByText("This browser can’t receive push notifications.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Turn on push notifications" })).toHaveCount(0);
+  // No account row on a phone: Sign out is the last item of the menu.
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.waitForURL(/\/login/); // may carry ?next= back to the page they were on
   expect(errors).toEqual([]);
 });

@@ -83,8 +83,11 @@ export async function login(page: Page, who: AccountKey) {
   await stubHumanCheck(page);
   if (process.env.E2E_SERVICE_ROLE_KEY) {
     const session = await sessionFor(email);
+    // Seed the session once per tab, so a test that signs out stays signed out.
     await page.addInitScript(([k, v]) => {
-      if (!localStorage.getItem(k)) localStorage.setItem(k, v);
+      if (sessionStorage.getItem("e2e-seeded")) return;
+      sessionStorage.setItem("e2e-seeded", "1");
+      localStorage.setItem(k, v);
     }, [AUTH_STORAGE_KEY, JSON.stringify(session)] as const);
     await page.goto("/feed");
     await expect(page.getByRole("heading", { name: "Feed analysis" })).toBeVisible();
