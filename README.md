@@ -85,7 +85,7 @@ npm run e2e                  # Playwright browser tests against the live site (s
 
 ## Tests
 - **Unit (`npm test`, Vitest, 34 tests):** detection and parsing of all 9 sample sheets, recalculated % of intended matched against the workbook's own values, stats, dedupe, flags.
-- **End-to-end (`npm run e2e`, Playwright, 21 tests):** signs in as each demo role and checks every page, including:
+- **End-to-end (`npm run e2e`, Playwright, 23 tests):** signs in as each demo role and checks every page, including:
   - filters and diet drill-down, flag filters, and the ✨ explain icons (model stubbed)
   - notification settings (changing the email address) and a live Questions badge when another user posts
   - CSV export
