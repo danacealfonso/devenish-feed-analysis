@@ -26,7 +26,7 @@ const EVENTS: { key: "on_upload" | "on_question" | "on_reply"; label: string; hi
 
 const PUSH_TEXT: Record<PushState, string> = {
   unconfigured: "Push isn’t set up for this site yet.",
-  unsupported: "This browser can’t receive push notifications. On iPhone, add the portal to your home screen first.",
+  unsupported: "This browser can’t receive push notifications. You’ll still get emails if they’re on.",
   denied: "Notifications are blocked for this site. Allow them in your browser’s site settings, then reload.",
   off: "Off in this browser.",
   on: "On in this browser. You’ll get a notification even when the portal is closed.",
