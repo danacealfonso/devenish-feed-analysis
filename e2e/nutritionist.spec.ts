@@ -134,6 +134,38 @@ test.describe("nutritionist", () => {
     await expect(page.getByLabel("Location name").first()).toBeEnabled();
   });
 
+  test("first visit shows a guided tour of the Feed page, and it can be replayed", async ({ page }) => {
+    // login() marks the tour as seen; undo that for this test, then reload as a first-time visitor.
+    await page.addInitScript(() => localStorage.removeItem("devenish.tourSeen"));
+    await page.reload();
+    const tour = page.getByRole("dialog", { name: "How is the feed doing?" });
+    await expect(tour).toBeVisible();
+    await expect(tour.getByText("Step 1 of 6")).toBeVisible();
+    for (const title of ["What needs attention", "Every diet, every nutrient", "Ask the AI", "Add new results", "Need a reminder?"]) {
+      await page.getByRole("button", { name: "Next" }).click();
+      await expect(page.getByRole("dialog", { name: title })).toBeVisible();
+    }
+    await shot(page, "tour-last-step");
+    await page.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByRole("button", { name: "Take the tour" }).click();
+    await expect(page.getByRole("dialog", { name: "How is the feed doing?" })).toBeVisible();
+    await page.getByRole("button", { name: "Skip tour" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("“What do these mean?” explains the page in plain words", async ({ page }) => {
+    await page.getByRole("button", { name: "What do these mean?" }).click();
+    const help = page.getByRole("dialog", { name: "What the Feed page shows" });
+    await expect(help.getByText("“% of intended”")).toBeVisible();
+    await expect(help.getByText("Far enough below to matter for the hens.", { exact: false })).toBeVisible();
+    await expect(help.getByRole("table")).toContainText("Calcium");
+    await expect(help.getByRole("definition").filter({ hasText: "Crude protein" })).toContainText("egg mass and egg weight");
+    await shot(page, "help-glossary");
+    await page.keyboard.press("Escape");
+    await expect(help).toHaveCount(0);
+  });
+
   test("feed page fits a phone screen without sideways scrolling", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();

@@ -1,6 +1,6 @@
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { login, shot, watchErrors } from "./helpers";
+import { deleteTestUploads, login, shot, watchErrors } from "./helpers";
 
 const WORKBOOK = path.join(__dirname, "..", "tests", "fixtures", "sample-data.xlsx");
 
@@ -38,6 +38,7 @@ test.describe("farm team", () => {
   });
 
   test("uploads a lab report through the upload dialog", async ({ page }) => {
+    const started = new Date().toISOString();
     await page.getByRole("button", { name: "Upload feed analysis" }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByText("Drop a lab or NIR export here")).toBeVisible();
@@ -63,6 +64,17 @@ test.describe("farm team", () => {
     await expect(dialog.getByText("0 new samples imported")).toBeVisible();
     await expect(dialog.getByText("4 matched samples already on file")).toBeVisible();
     await shot(page, "upload-done");
+    await dialog.getByRole("button", { name: "Close" }).last().click();
+    await deleteTestUploads(started);
+  });
+
+  test("the upload dialog can load the sample workbook in one click", async ({ page }) => {
+    await page.getByRole("button", { name: "Upload feed analysis" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "Use the sample workbook" }).click();
+    await expect(dialog.getByText("9 sheets found")).toBeVisible();
+    await expect(dialog.getByText("Lab analysis report · 100% match")).toBeVisible();
+    // Stop before importing: the point is that anyone can try the upload without a file.
     await dialog.getByRole("button", { name: "Close" }).last().click();
   });
 });

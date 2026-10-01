@@ -54,6 +54,17 @@ export function UploadDialog({ open, onClose }: { open: boolean; onClose: () => 
     setResult(null);
   }
 
+  async function loadSample() {
+    setError(null);
+    try {
+      const res = await fetch("/samples/sample-data.xlsx");
+      if (!res.ok) throw new Error(`couldn’t load the sample workbook (${res.status})`);
+      await onFile(new File([await res.blob()], "sample-data.xlsx", { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   async function onFile(f: File) {
     setError(null);
     setBusy(true);
@@ -171,6 +182,7 @@ export function UploadDialog({ open, onClose }: { open: boolean; onClose: () => 
         )}
 
         {step === "file" && (
+          <>
           <label
             onDragOver={(e) => {
               e.preventDefault();
@@ -200,6 +212,21 @@ export function UploadDialog({ open, onClose }: { open: boolean; onClose: () => 
               onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
             />
           </label>
+          {/* Lets anyone try the upload without having a lab file to hand. */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-page px-4 py-3 text-sm">
+            <span className="text-ink-2">
+              No file to hand? Try it with the exercise’s sample workbook (9 sheets: lab reports, NIR exports and comparison sheets).
+            </span>
+            <span className="flex items-center gap-3">
+              <a href="/samples/sample-data.xlsx" download className="font-semibold text-navy-800 hover:underline">
+                Download it
+              </a>
+              <button type="button" onClick={loadSample} disabled={busy} className="rounded-lg bg-navy-900 px-3 py-2 font-semibold text-white hover:bg-navy-800 disabled:opacity-50">
+                Use the sample workbook
+              </button>
+            </span>
+          </div>
+          </>
         )}
 
         {step === "sheets" && (

@@ -7,6 +7,8 @@ import { AttentionList } from "@/components/feed/AttentionList";
 import { DeviationMatrix } from "@/components/feed/DeviationMatrix";
 import { DistributionStrip } from "@/components/feed/DistributionStrip";
 import { HeadlineCards } from "@/components/feed/HeadlineCards";
+import { GuidedTour } from "@/components/feed/GuidedTour";
+import { HelpGlossary } from "@/components/feed/HelpGlossary";
 import { SummaryTable } from "@/components/feed/SummaryTable";
 import { UploadDialog } from "@/components/feed/UploadDialog";
 import { computeFlags, currentCycleStart, fmtDate } from "@/lib/analysis/flags";
@@ -98,7 +100,9 @@ function FeedContent() {
             {latestDate && ` Latest sample ${fmtDate(latestDate)}.`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <HelpGlossary tolerances={tolerances} />
+          <GuidedTour ready={!loading && !error && samples.length > 0} />
           <button
             onClick={reload}
             aria-label="Refresh"
@@ -108,6 +112,7 @@ function FeedContent() {
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
           <button
+            data-tour="upload"
             onClick={() => setUploadOpen(true)}
             className="flex items-center gap-2 rounded-lg bg-navy-900 px-5 py-2.5 font-semibold text-white hover:bg-navy-800"
           >
@@ -174,12 +179,18 @@ function FeedContent() {
         </div>
       ) : (
         <div className="mt-8 space-y-8">
-          <HeadlineCards samples={filtered} tolerances={tolerances} />
+          <div data-tour="headline">
+            <HeadlineCards samples={filtered} tolerances={tolerances} />
+          </div>
           <div className="grid items-start gap-8 xl:grid-cols-2">
-            <AttentionList flags={flags} since={currentCycleStart(filtered)} />
+            <div data-tour="attention">
+              <AttentionList flags={flags} since={currentCycleStart(filtered)} />
+            </div>
             <DistributionStrip samples={filtered} nutrients={nutrients} tolerances={tolerances} />
           </div>
-          <DeviationMatrix samples={filtered} nutrients={nutrients} />
+          <div data-tour="matrix">
+            <DeviationMatrix samples={filtered} nutrients={nutrients} />
+          </div>
           <SummaryTable samples={filtered} nutrients={nutrients} tolerances={tolerances} />
           <p className="text-xs text-ink-3">
             Nutrients shown: {nutrients.map((n) => NUTRIENT_META[n].label).join(", ")}. As-received basis.

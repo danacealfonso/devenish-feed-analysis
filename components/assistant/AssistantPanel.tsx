@@ -152,6 +152,7 @@ function Assistant() {
     <>
       {!open && (
         <button
+          data-tour="ask-ai"
           onClick={() => setOpen(true)}
           className="fixed right-4 bottom-4 z-40 flex items-center gap-2 rounded-full bg-navy-900 px-5 py-3 font-semibold text-white shadow-lg hover:bg-navy-800 print:hidden sm:right-6 sm:bottom-6"
         >

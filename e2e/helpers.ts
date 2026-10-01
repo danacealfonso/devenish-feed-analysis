@@ -81,6 +81,12 @@ export async function login(page: Page, who: AccountKey) {
   const { email, password } = ACCOUNTS[who];
   await stubNotify(page);
   await stubHumanCheck(page);
+  // The first-visit tour would cover the page; its own test turns it back on.
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("devenish.tourSeen", "1");
+    } catch {}
+  });
   if (process.env.E2E_SERVICE_ROLE_KEY) {
     const session = await sessionFor(email);
     // Seed the session once per tab, so a test that signs out stays signed out.
@@ -116,3 +122,17 @@ export async function shot(page: Page, name: string) {
 
 /** The app's own alert; excludes Next.js's always-present route announcer, which also has role="alert". */
 export const appAlert = (page: Page) => page.locator('[role="alert"]:not(#__next-route-announcer__)');
+
+/**
+ * Removes uploads a test made that added no new samples (re-imports of the sample workbook), with their raw files,
+ * so test runs don't pile up duplicate rows on the demo customer's Data page. Needs E2E_SERVICE_ROLE_KEY.
+ */
+export async function deleteTestUploads(since: string) {
+  if (!process.env.E2E_SERVICE_ROLE_KEY) return;
+  const admin = createClient(SUPABASE_URL, process.env.E2E_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  const { data } = await admin.from("uploads").select("id, storage_path").eq("inserted_count", 0).gte("created_at", since);
+  if (!data?.length) return;
+  const paths = data.map((u) => u.storage_path).filter((p): p is string => !!p);
+  if (paths.length) await admin.storage.from("feed-uploads").remove(paths);
+  await admin.from("uploads").delete().in("id", data.map((u) => u.id));
+}

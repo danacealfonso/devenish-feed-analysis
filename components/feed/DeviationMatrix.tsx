@@ -140,8 +140,13 @@ export function DeviationMatrix({ samples, nutrients }: { samples: SampleView[];
                 Sampled
               </th>
               {nutrients.map((n) => (
-                <th key={n} scope="col" className="border-l border-line px-2 py-2 text-right font-semibold whitespace-nowrap">
-                  {NUTRIENT_META[n].short}
+                <th
+                  key={n}
+                  scope="col"
+                  title={`${NUTRIENT_META[n].label}${NUTRIENT_META[n].why ? ` — matters for ${NUTRIENT_META[n].why}` : ""}`}
+                  className="border-l border-line px-2 py-2 text-right font-semibold whitespace-nowrap"
+                >
+                  <abbr title={NUTRIENT_META[n].label} className="no-underline">{NUTRIENT_META[n].short}</abbr>
                   <span className="block text-[10px] font-normal normal-case">
                     {NUTRIENT_META[n].unit === "ppm" ? "ppm" : "% of int."}
                   </span>
