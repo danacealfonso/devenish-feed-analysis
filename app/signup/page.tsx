@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AuthShell, Field, Notice, PasswordInput, inputClass, primaryButtonClass } from "@/components/auth/AuthShell";
 import { HumanCheck, type HumanCheckHandle, HUMAN_CHECK_ON, humanCheckMessage, NEEDS_HUMAN_CHECK } from "@/components/auth/HumanCheck";
+import { PasswordChecklist } from "@/components/auth/PasswordChecklist";
+import { LEAKED_MESSAGE, passwordProblem, timesLeaked } from "@/lib/auth/password";
 import { supabase } from "@/lib/supabase/client";
-
-const MIN_LENGTH = 8;
 
 export default function SignupPage() {
   const router = useRouter();
@@ -34,11 +34,17 @@ export default function SignupPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (password.length < MIN_LENGTH) return setError(`Password must be at least ${MIN_LENGTH} characters.`);
+    const problem = passwordProblem(password, { email, name });
+    if (problem) return setError(problem);
     if (password !== confirm) return setError("Passwords don’t match.");
     if (HUMAN_CHECK_ON && !captcha) return setError(NEEDS_HUMAN_CHECK);
 
     setBusy(true);
+    const leaked = await timesLeaked(password);
+    if (leaked) {
+      setBusy(false);
+      return setError(LEAKED_MESSAGE(leaked));
+    }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -53,7 +59,11 @@ export default function SignupPage() {
       check.current?.reset();
       setError(
         humanCheckMessage(error.message) ??
-          (error.code === "user_already_exists" ? "An account with this email already exists. Sign in instead." : error.message),
+          (error.code === "user_already_exists"
+            ? "An account with this email already exists. Sign in instead."
+            : error.code === "weak_password"
+              ? "That password isn’t strong enough. Follow the checklist under the password box."
+              : error.message),
       );
       return;
     }
@@ -115,10 +125,8 @@ export default function SignupPage() {
           />
         </Field>
         <Field id="password" label="Password">
-          <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="new-password" describedBy="pw-hint" />
-          <p id="pw-hint" className="mt-1 text-xs text-ink-3">
-            At least {MIN_LENGTH} characters.
-          </p>
+          <PasswordInput id="password" value={password} onChange={setPassword} autoComplete="new-password" describedBy="pw-rules" />
+          <PasswordChecklist id="pw-rules" password={password} email={email} name={name} />
         </Field>
         <Field id="confirm" label="Confirm password">
           <PasswordInput id="confirm" value={confirm} onChange={setConfirm} autoComplete="new-password" />
