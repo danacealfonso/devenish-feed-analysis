@@ -124,13 +124,13 @@ test.describe("nutritionist", () => {
   });
 
   test("preview as customer makes settings read-only", async ({ page }) => {
-    await page.getByRole("switch").check();
+    await page.getByRole("switch", { name: /Preview as customer/ }).check();
     await expect(page.getByText("previewing customer view")).toBeVisible();
     await page.getByRole("link", { name: "Operation" }).click();
     await expect(page.getByText("managed by your Devenish nutritionist")).toBeVisible();
     await expect(page.getByLabel("Location name").first()).toBeDisabled();
     await shot(page, "operation-preview");
-    await page.getByRole("switch").uncheck();
+    await page.getByRole("switch", { name: /Preview as customer/ }).uncheck();
     await expect(page.getByLabel("Location name").first()).toBeEnabled();
   });
 
@@ -152,6 +152,36 @@ test.describe("nutritionist", () => {
     await expect(page.getByRole("dialog", { name: "How is the feed doing?" })).toBeVisible();
     await page.getByRole("button", { name: "Skip tour" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("analyzed vs intended: click a box for a plain explanation, and filter to diets that need attention", async ({ page }) => {
+    await chooseCustomer(page, "Customer A");
+    const matrix = page.locator("#matrix").locator("xpath=ancestor::section");
+    await expect(matrix.getByRole("columnheader", { name: /Calcium/ })).toContainText("% of recipe");
+    await expect(matrix.getByRole("list", { name: "Colour key" })).toContainText("Far below");
+    // Every diet row says what it needs.
+    await expect(matrix.locator("[data-diet-status]").first()).toHaveText(/need(s)? action|to watch|On target|Check data/);
+
+    await matrix.getByRole("button", { name: /^Calcium: \d+% of recipe, far below target/ }).first().click();
+    const explain = page.getByRole("dialog");
+    await expect(explain.getByRole("heading", { name: /% of recipe/ })).toBeVisible();
+    await expect(explain).toContainText(/The (lab|NIR scanner) measured .* calcium; the recipe called for .*\. That’s \d+% below target\. That’s far enough off to act on\./);
+    await expect(explain).toContainText("Why it matters: calcium affects eggshell strength");
+    await expect(explain.getByRole("button", { name: "Ask AI about this" })).toBeVisible();
+    await expect(explain.getByRole("link", { name: "View diet history" })).toBeVisible();
+    await shot(page, "matrix-explain");
+    await page.keyboard.press("Escape");
+    await expect(explain).toHaveCount(0);
+
+    const toggle = matrix.getByRole("switch", { name: /Only diets that need action/ });
+    const [, needing, total] = (await toggle.locator("xpath=..").innerText()).match(/\((\d+) of (\d+)\)/)!.map(Number);
+    expect(needing).toBeLessThan(total);
+    await toggle.check();
+    // Only diets with something far off target (or a number to check) remain.
+    const chips = matrix.locator("[data-diet-status]");
+    await expect(chips).toHaveCount(needing);
+    for (const t of await chips.allInnerTexts()) expect(t).toMatch(/need(s)? action|Check data/);
+    await toggle.uncheck();
   });
 
   test("“What do these mean?” explains the page in plain words", async ({ page }) => {

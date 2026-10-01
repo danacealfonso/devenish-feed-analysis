@@ -17,7 +17,7 @@ test.describe("farm team", () => {
     await expect(page.getByText("Customer A · Feed quality")).toBeVisible();
     await expect(page.getByText("Customer team")).toBeVisible();
     await expect(page.getByRole("link", { name: "Admin" })).toHaveCount(0);
-    await expect(page.getByRole("switch")).toHaveCount(0);
+    await expect(page.getByRole("switch", { name: /Preview as customer/ })).toHaveCount(0);
     await shot(page, "feed-farm");
   });
 

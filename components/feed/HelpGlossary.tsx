@@ -6,11 +6,11 @@ import { NUTRIENT_META, type ToleranceMap } from "@/lib/analysis/tolerances";
 import type { NutrientCode } from "@/lib/parsers/types";
 
 const COLOURS: [string, string, string][] = [
-  ["bg-white text-ink border border-line", "In band", "Close to the recipe. Nothing to do."],
-  ["bg-watch-bg text-watch-ink", "▼ Watch low", "A little below the recipe. Keep an eye on it; two in a row are flagged."],
-  ["bg-action-bg text-action-ink", "▼▼ Action low", "Far enough below to matter for the hens. Talk to the feed mill or your nutritionist."],
-  ["bg-high-bg text-high-ink", "▲ Watch high", "A little above the recipe. Usually costs money rather than harming the birds."],
-  ["bg-high-action-bg text-high-ink", "▲▲ Action high", "Well above the recipe. Check the mix and the cost."],
+  ["bg-white text-ink border border-line", "On target", "Close to the recipe. Nothing to do."],
+  ["bg-watch-bg text-watch-ink", "▼ A little below", "Below the recipe, inside the watch level. Keep an eye on it; two in a row are flagged."],
+  ["bg-action-bg text-action-ink", "▼▼ Far below", "Past the action level: far enough below to matter for the hens. Talk to the feed mill or your nutritionist."],
+  ["bg-high-bg text-high-ink", "▲ A little above", "Above the recipe, inside the watch level. Usually costs money rather than harming the birds."],
+  ["bg-high-action-bg text-high-ink", "▲▲ Far above", "Past the action level: well above the recipe. Check the mix and the cost."],
   ["suspect-stripes text-suspect-ink", "? Check data", "The number itself looks wrong (a typo or a mislabelled sample), not the feed."],
 ];
 const NUTRIENTS: NutrientCode[] = ["cp", "ca", "p", "na", "nacl", "fat", "fiber", "moisture", "zn", "cu"];
