@@ -62,8 +62,10 @@ test.describe("signed-out pages", () => {
     await expect(rules.getByText("At least 10 characters (not yet)")).toBeAttached();
     await pw.fill("Santos#2026!x");
     await expect(rules.getByText("Doesn’t contain your name or email (not yet)")).toBeAttached();
+    await page.route("https://api.pwnedpasswords.com/range/**", (r) => r.fulfill({ contentType: "text/plain", body: "0000000000000000000000000000000000A:3\r\n" }));
     await pw.fill("Hens&Calcium42");
     await expect(page.getByText("Strong", { exact: true })).toBeVisible();
+    await expect(rules.getByText("Not found in known data breaches (done)")).toBeAttached();
     for (const label of ["At least 10 characters", "An uppercase letter (A–Z)", "A number (0–9)", "A symbol, such as ! ? # or *"])
       await expect(rules.getByText(`${label} (done)`)).toBeAttached();
     await shot(page, "signup-password-checklist");
@@ -85,6 +87,9 @@ test.describe("signed-out pages", () => {
     await page.getByLabel("Password", { exact: true }).fill(password);
     await page.getByLabel("Confirm password").fill(password);
     await page.getByRole("button", { name: "Create account" }).click();
+    // The checklist flags it while typing, and the form refuses it on submit.
+    await expect(page.getByText("Found in data breaches", { exact: true })).toBeVisible();
+    await expect(page.getByText("Found in 1,234 data breaches: choose another")).toBeVisible();
     await expect(appAlert(page)).toContainText("appeared in 1,234 data breaches");
     // Only the first 5 characters of the fingerprint leave the browser.
     expect(asked.endsWith(`/range/${hex.slice(0, 5)}`)).toBe(true);
