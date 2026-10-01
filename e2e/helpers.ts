@@ -84,7 +84,7 @@ export async function login(page: Page, who: AccountKey) {
   // The first-visit tour would cover the page; its own test turns it back on.
   await page.addInitScript(() => {
     try {
-      localStorage.setItem("devenish.tourSeen", "1");
+      localStorage.setItem("devenish.tourSeen.v2", "1"); // keep in step with TOUR_SEEN_KEY in GuidedTour.tsx
     } catch {}
   });
   if (process.env.E2E_SERVICE_ROLE_KEY) {
