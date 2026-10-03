@@ -1,10 +1,10 @@
 "use client";
 
-import { Building2, Plus } from "lucide-react";
+import { Building2, Plus, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { buttonPrimary, buttonSecondary, Card, inputBase, Page, PageHeader } from "@/components/portal/PageHeader";
-import { usePortal } from "@/lib/data/portal";
+import { ROLE_LABEL, usePortal, type MemberRole } from "@/lib/data/portal";
 import { supabase } from "@/lib/supabase/client";
 import { pillClass } from "@/lib/ui/status";
 
@@ -18,7 +18,103 @@ interface CustomerRow {
   samples: { count: number }[];
 }
 
+interface Waiting {
+  id: string;
+  email: string;
+  full_name: string | null;
+  created_at: string;
+}
+
 const count = (x: { count: number }[]) => x[0]?.count ?? 0;
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+/** People who signed up without an invitation: they see nothing until an admin gives them a customer and a role. */
+function WaitingForAccess({ customers, onAdded }: { customers: CustomerRow[]; onAdded: () => Promise<void> }) {
+  const [people, setPeople] = useState<Waiting[]>([]);
+  const [choice, setChoice] = useState<Record<string, { org: string; role: MemberRole }>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
+  const load = useCallback(async () => {
+    const [p, m, a] = await Promise.all([
+      supabase.from("profiles").select("id, email, full_name, created_at").order("created_at", { ascending: false }),
+      supabase.from("memberships").select("user_id"),
+      supabase.from("platform_admins").select("user_id"),
+    ]);
+    const err = p.error ?? m.error ?? a.error;
+    if (err) return setNotice({ kind: "error", text: err.message });
+    const hasAccess = new Set([...(m.data ?? []), ...(a.data ?? [])].map((r) => r.user_id as string));
+    setPeople(((p.data ?? []) as Waiting[]).filter((x) => !hasAccess.has(x.id)));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function add(person: Waiting) {
+    const c = choice[person.id] ?? { org: customers[0]?.id ?? "", role: "producer" as MemberRole };
+    if (!c.org) return;
+    setBusy(person.id);
+    setNotice(null);
+    const { data, error } = await supabase.rpc("invite_member", { p_org: c.org, p_email: person.email, p_role: c.role });
+    setBusy(null);
+    if (error) return setNotice({ kind: "error", text: error.message });
+    const customer = customers.find((x) => x.id === c.org)?.name ?? "the customer";
+    setNotice({
+      kind: "ok",
+      text:
+        (data as { status: string }).status === "added"
+          ? `${person.email} now has access to ${customer} as ${ROLE_LABEL[c.role].toLowerCase()}.`
+          : `${person.email} hasn't confirmed their email yet. They get access to ${customer} as soon as they do.`,
+    });
+    await Promise.all([load(), onAdded()]);
+  }
+
+  return (
+    <Card title="Waiting for access" subtitle="Signed up without an invitation. They see nothing until you add them to a customer.">
+      {notice && (
+        <p role={notice.kind === "error" ? "alert" : "status"} className={`mx-5 mt-4 rounded-lg px-4 py-3 text-sm ${notice.kind === "error" ? "bg-action-bg text-action-ink" : "bg-ok-bg text-ok-ink"}`}>
+          {notice.text}
+        </p>
+      )}
+      {!people.length ? (
+        <p className="p-5 text-sm text-ink-3">Nobody is waiting.</p>
+      ) : (
+        <ul className="divide-y divide-line">
+          {people.map((p) => {
+            const c = choice[p.id] ?? { org: customers[0]?.id ?? "", role: "producer" as MemberRole };
+            const set = (next: Partial<typeof c>) => setChoice((all) => ({ ...all, [p.id]: { ...c, ...next } }));
+            return (
+              <li key={p.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
+                <div className="min-w-48 flex-1">
+                  <p className="font-semibold">{p.full_name || p.email}</p>
+                  <p className="text-xs text-ink-3">
+                    {p.full_name ? `${p.email} · ` : ""}signed up {fmt(p.created_at)}
+                  </p>
+                </div>
+                <select aria-label={`Customer for ${p.email}`} value={c.org} onChange={(e) => set({ org: e.target.value })} className={inputBase}>
+                  {customers.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.name}
+                      {x.is_demo ? " (demo)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <select aria-label={`Role for ${p.email}`} value={c.role} onChange={(e) => set({ role: e.target.value as MemberRole })} className={inputBase}>
+                  <option value="producer">{ROLE_LABEL.producer}</option>
+                  <option value="nutritionist">{ROLE_LABEL.nutritionist}</option>
+                </select>
+                <button onClick={() => add(p)} disabled={busy === p.id || !c.org} className={buttonPrimary}>
+                  <UserPlus size={16} /> {busy === p.id ? "Adding…" : "Add"}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
 
 export default function AdminPage() {
   const router = useRouter();
@@ -71,7 +167,7 @@ export default function AdminPage() {
       <PageHeader
         section="Admin"
         title="Customers"
-        description="Every customer in the portal. Create a customer, add its locations and mills under Operation, then invite the farm team and their nutritionist."
+        description="Every customer in the portal. Create a customer, add its locations and mills under Operation, then invite the farm team and their nutritionist. People who sign up without an invitation wait below until you add them."
       />
       {error && (
         <p role="alert" className="mt-6 rounded-lg bg-action-bg px-4 py-3 text-sm text-action-ink">
@@ -134,6 +230,10 @@ export default function AdminPage() {
             </div>
           </form>
         </Card>
+      </div>
+
+      <div className="mt-6">
+        <WaitingForAccess customers={rows} onAdded={load} />
       </div>
     </Page>
   );

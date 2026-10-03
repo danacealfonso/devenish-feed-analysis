@@ -24,6 +24,8 @@ test.describe("notifications", () => {
 
     const input = page.getByLabel("Send emails to");
     await expect(input).toHaveAttribute("placeholder", ACCOUNTS.nutritionist.email);
+    // Put back whatever this shared demo account had, so a reviewer's own setting survives the test.
+    const before = await input.inputValue();
     await input.fill("not-an-email");
     await page.getByRole("button", { name: "Save email" }).click();
     await expect(page.getByRole("alert").filter({ hasText: "valid email" })).toBeVisible();
@@ -38,10 +40,10 @@ test.describe("notifications", () => {
 
     await page.reload();
     await expect(page.getByLabel("Send emails to")).toHaveValue(alt);
-    // Back to the sign-in email.
-    await page.getByLabel("Send emails to").fill("");
+    // Back to what it was (blank means the sign-in email).
+    await page.getByLabel("Send emails to").fill(before);
     await page.getByRole("button", { name: "Save email" }).click();
-    await expect(page.getByText(`Notifications will be emailed to ${ACCOUNTS.nutritionist.email}.`)).toBeVisible();
+    await expect(page.getByText(`Notifications will be emailed to ${before || ACCOUNTS.nutritionist.email}.`)).toBeVisible();
     expect(errors).toEqual([]);
   });
 

@@ -2,7 +2,7 @@
 
 Upload raw lab and NIR feed analyses, and compare them to each diet's formulation. Deviations are flagged by location, flock phase and diet.
 
-- **Live prototype:** https://devenish-a4843.web.app (create an account at `/signup`, then sign in with email + password)
+- **Live prototype:** https://devenish-a4843.web.app (sign in with a demo account below; a new account at `/signup` sees nothing until an admin gives it a customer)
 - **Notes (decisions, data issues, questions):** [NOTES.md](NOTES.md), also as a one-page PDF: [docs/Feed-Analysis-Notes.pdf](docs/Feed-Analysis-Notes.pdf)
 
 ## Demo accounts
@@ -14,7 +14,7 @@ Sign in at https://devenish-a4843.web.app/login. There is one account per role:
 | Nutritionist | `kanamits2@gmail.com` | `euRFJ2yke9zzNDV9` | Customers A, D and F; can edit tolerances, locations, mills and the team; *Preview as customer* switch |
 | Farm team (producer) | `kanamits3@gmail.com` | `euRFJ2yke9zzNDV9` | **Customer A only**; can upload and ask questions; settings are read-only |
 
-Roles are assigned in `supabase/migrations/…07_demo_accounts.sql`. A new sign-up without an invitation joins the demo customers as a nutritionist.
+Roles are assigned in `supabase/migrations/…07_demo_accounts.sql`. A new sign-up without an invitation gets no access: it appears under **Admin → Waiting for access**, where an admin picks its customer and role.
 
 ### What each role can do
 | | Devenish admin | Nutritionist | Farm team |
@@ -103,13 +103,15 @@ Migrations live in `supabase/migrations`:
 | File | Contents |
 |---|---|
 | `…01_init.sql` | tables |
-| `…02_rls.sql` | row-level security, the new-user → demo-org trigger, and the storage bucket |
+| `…02_rls.sql` | row-level security, the new-user trigger (its demo-org access is removed in `…10`), and the storage bucket |
 | `…03_import_rpc.sql` | `import_feed_upload()`: an atomic import that dedupes duplicates and only fills gaps when it merges |
 | `…05_questions.sql` | producer ↔ nutritionist question threads |
 | `…06_roles_invitations.sql` | producer / nutritionist / admin permissions, invitations, profiles |
 | `…07_demo_accounts.sql` | assigns the admin / nutritionist / farm-team demo accounts |
 | `…08_assistant_usage.sql` | usage log behind the assistant's daily caps |
 | `…09_notifications.sql` | notification settings, push tokens, seen markers and `unread_counts()` for badges, send log, Realtime publication |
+| `…10_admin_assigns_access.sql` | new sign-ups no longer join the demo customers (an admin assigns access); removes the demo access earlier sign-ups were given |
+| `…11_fix_null_permission_checks.sql` | security fix: a non-member could add themselves to a customer, change roles or remove people |
 | `…04_demo_seed.sql` | **generated** from `tests/fixtures/sample-data.xlsx` by `npm run seed:build`, using the same parsers as the app |
 
 ```bash

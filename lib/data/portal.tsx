@@ -273,8 +273,9 @@ function NoAccess({ email, onRetry }: { email: string; onRetry: () => void }) {
       <div className="max-w-md rounded-xl border border-line bg-surface p-8 text-center">
         <h1 className="text-2xl font-bold">You don’t have access to a customer yet</h1>
         <p className="mt-3 text-sm text-ink-2">
-          You’re signed in as <b>{email}</b>. Ask your Devenish nutritionist, or a colleague who already uses the portal,
-          to invite this email address. Once they have, come back here.
+          You’re signed in as <b>{email}</b>. A Devenish administrator gives each account its customer and role, so ask
+          Devenish, your nutritionist, or a colleague who already uses the portal to add this email address. Once they
+          have, come back here.
         </p>
         <div className="mt-6 flex justify-center gap-2">
           <button onClick={onRetry} className="rounded-lg bg-navy-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-navy-800">
