@@ -37,8 +37,8 @@ const STEPS: { target: string; title: string; body: string }[] = [
   },
 ];
 
-// Bump the version to show the tour again to everyone, e.g. after the tour changes (v2: reset on 2 Oct 2026).
-export const TOUR_SEEN_KEY = "devenish.tourSeen.v2";
+// Bump the version to show the tour again to everyone, e.g. after the tour changes (v3: reset on 3 Oct 2026).
+export const TOUR_SEEN_KEY = "devenish.tourSeen.v3";
 const SEEN_KEY = TOUR_SEEN_KEY;
 const seen = () => {
   try {

@@ -136,7 +136,7 @@ test.describe("nutritionist", () => {
 
   test("first visit shows a guided tour of the Feed page, and it can be replayed", async ({ page }) => {
     // login() marks the tour as seen; undo that for this test, then reload as a first-time visitor.
-    await page.addInitScript(() => localStorage.removeItem("devenish.tourSeen.v2"));
+    await page.addInitScript(() => localStorage.removeItem("devenish.tourSeen.v3"));
     await page.reload();
     const tour = page.getByRole("dialog", { name: "How is the feed doing?" });
     await expect(tour).toBeVisible();
